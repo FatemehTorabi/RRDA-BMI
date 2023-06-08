@@ -1,13 +1,15 @@
 -- BMI source types general extraction and adding cohort in BMI_UNCLEAN
--- code modified from BMI_V2 (s.j.aldridge@swansea.ac.uk)
--- by: m.j.childs@swansea.ac.uk
-
--- AIMS (and some changes to BMI_V2):
-	-- extracting all BMI related entries between 2000-2021.
+--
+-- AIMS:
+	-- extracting all BMI related entries between 2000-2022.
 	-- date restriction applied on BMI_CAT, BMI_VAL, BMI_HEIGHTWEIGHT, and BMI_PEDW
 	-- source_db column applied to each table (WLGP / MIDS / PEDW)
--- Note to User: Please read README file that accompanies this code.
-
+-- Note to User: Please refer to the README file that accompanies this code.
+--
+-- The specific SAIL project names and numbers are based on an operationalised version of this method,
+-- but should be replaced by each project based on their project number once they have approval to the
+-- data and trusted research environment.
+--
 -----------------------------------------------------------------------------------------------------------------
 ------- BMI script FOR adults aged 19 and over ----------------------
 -----------------------------------------------------------------------------------------------------------------

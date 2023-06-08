@@ -23,6 +23,4 @@ This repository holds the BMI algorithm which can be impelemented in any data en
 * To extract data from base data sources see <a href="[/about/about_team.htm](https://swanseauniversity.sharepoint.com/:w:/r/sites/HDR-UK-TeamAndProjects-UsrGrp/_layouts/15/Doc.aspx?sourcedoc=%7B814A024F-C958-4624-9182-C1F0C5B24175%7D&file=Manuscript%20.docx&action=default&mobileredirect=true)">this</a> 
 * To combine and clean data see <a href="https://github.com/SwanseaUniversityMedical/BMI_algorithm/tree/a8a817c33a2c08ca9c51caa7042c50c08772004a/Algorithm">this</a> <br>
 
-If you are interested in development and collaboration on this work please get in touch with us:<br>
-<a href = "mailto: M.J.Childs@Swansea.ac.uk">M.J.Childs@Swansea.ac.uk</a> <br>
-<a href = "mailto: Fatemeh.Torabi@Swansea.ac.uk">Fatemeh.Torabi@Swansea.ac.uk</a> <br>
+If you are interested in development and collaboration on this work please get in touch with the lead and senior authors<br>

@@ -1,5 +1,3 @@
-Code created by m.j.childs@swansea.ac.uk
-
 This folder contains scripts used to generate TableOne (yearly breakdown and grouped into 5 years at a time) and preservation of BMI (1 year, 5 years, and across the study).
 
 The extraction of BMI records should have been already done (see appropriate folder for your cohort, i.e., CYP / Adults)
