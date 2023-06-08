@@ -1,0 +1,1746 @@
+---
+title: 'Bridging the gap: Development of a methodology for retrieving and harmonising Body Mass Index (BMI) from population-level linked electronic health records.'
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+    code_folding: hide
+  word_document:
+    toc: yes
+    toc_depth: '2'
+always_allow_html: yes
+toc-title: Contents
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r connect, include=FALSE}
+library(RODBC)
+library(kableExtra)
+library(dplyr)
+library(stringr)
+library(readr)
+library(ggplot2)
+library(ggpubr)
+library(tidyr)
+library(sailr)
+library(rmarkdown)
+library(DT)
+library(UpSetR)
+library(patchwork)
+library(gtsummary)
+library(lubridate)
+library(tidyr)
+library(Cairo)
+library(fastmap)
+library(assertthat)
+library(tidyverse)
+library(gt)
+library(gtsummary)
+library(magrittr)
+library(data.table)
+library(dplyr)
+library(broom)
+library(purrr)
+library(formattable)
+library(readxl)
+options(scipen = 999)
+
+```
+
+```{r studywindow, echo=FALSE, message=FALSE}
+study_start <- ymd("2001-01-01")
+study_end   <- ymd("2022-12-31")
+
+```
+
+```{r log in, include = FALSE }
+#log in to sail
+source("P:/childsm/BMI/login_box.R")
+#find_directory <- as.character(file.choose("P:/childsm/BMI/login_box.R"))
+#source(find_directory)
+
+#login to SAIL
+login <- getLogin() #Username is optional - omit and it will prompt for username.
+conn <- odbcConnect('PR_SAIL',login[1],login[2])
+rm(login)
+
+```
+
+## SAIL Reviewer
+
+Dear SAIL Reviewer,
+
+Thank you for your time in reviewing this document.
+
+We used individual-level data in this report for creation of a BMI
+measure for the enitre population of Wales from 4 data sources along
+with WDSD, ADDE and Ethnicity tables for general demographics data.
+
+As indicated below this is version 5.2.0 of the file, where we have data
+for both adults and children and young people's cohort from 2000-2022,
+and have amended the consort diagram as mentioned in the review.
+
+We have added reports on the BMI coverage comparisons on the annual BMI
+recording and 1 year lookback period before and after COVID-19 pandemic,
+i.e., 2017-2019 and 2020-2022 and the counts of BMI records grouped by sex and age bands for both CYP and adult cohorts.
+
+To comply with disclosure rules we have removed rows or categories with
+count < 10.
+
+We provide in the two attached zip files all the figures and background
+data used in this report in PNG and CSV format. Please also feel free to
+refer to appendix I for further information on this.
+
+## Preamble
+
+#### IGRP project 1151 (census data elements included)
+
+#### Version 5.2
+
+#### Study window
+
+-   Start date: 2000-01-01
+-   End date : 2021-12-31
+
+#### Generated at/by
+
+Compiled date: `r format(Sys.time(), '%a %d %B %Y')` Please note all
+data coverage provided are up to above compiled date.
+
+-   Michael Jeanne Childs
+    [m.j.childs\@swansea.ac.uk](mailto:m.j.childs@swansea.ac.uk){.email}
+
+#### Collaborators team
+
+-   Ashley Akbari, Fatemeh Torabi, Sarah Aldridge, Hoda Abbasizanjani,
+    Victoria Best, Helen Daniels, Gareth Davies, Ronan Lyons
+
+## Introduction
+
+Body Mass Index (BMI) has been widely used to indicate an individual's
+health, with higher BMI values pertaining to being less healthy. Use of
+BMI categories has been useful in predicting adult obesity from
+childhood BMI, as well as being used as a marker for chronic illnesses
+such as cardiovascular diseases and diabetes, to name a few.
+
+The use of electronic health records in research using BMI has allowed a
+low cost and low time consuming method of conducting longitudinal
+research, however, research using electronic health records have cited
+several limitations when using EHRs, including the missingness of BMI
+categories in dataset ranging from 42.87% to 58.9% of missing data in
+adults (Bedston et al., 2022; Lee-Lane et al., 2021; Lyons et al., 2022)
+and up to 78% in children (Hammond et al., 2021) and only using one data
+source for their sample. This leads to researchers dropping BMI as a
+variable in their studies (Lee-Lane et al., 2021).
+
+The development of our BMI algorithm aims to address these issues by
+extracting BMI categories and BMI values, as well as calculating BMI
+from height and weight values from a number of databases databases, and
+using a longitudinal record to expand the search for BMI records in the
+databases. We expect that incorporating these strategies will increase
+the coverage of BMI data for better utilisation in health related
+research.
+
+## Objectives and Methods
+
+### Objectives:
+
+1.  Extract relevant BMI records using READ codes from WLGP, ICD-10
+    codes from PEDW, and height and weight values from NCCH and MIDS in
+    a given date range.
+
+    -   Use READ codes pertaining to BMI categories, BMI values, and
+        height and weight measurements from WLGP.
+
+    -   Use specified ICD-10 code to extract ALF_PEs with diagnoses
+        related to BMI in the PEDW table.
+
+    -   Extract height and weight information from NCCH and MIDS tables.
+
+    -   Rank same-day recordings based on source heirarchy:
+
+        -   BMI value from READ code.
+
+        -   BMI value from height and weight calculations.
+
+        -   BMI category from READ code.
+
+        -   BMI category from ICD-10 code.
+
+    -   Remove entries from ALFs with no WOB data, invalid gender data,
+        ALFs who died before the study start date, and ALFs who died
+        within 31 days of the study date.
+
+2.  Calculate age at BMI reading using WOB from WSDSD table and separate
+    adults (19-100) and children (2-18) cohort.
+
+3.  Calculate BMI values using height and weight separately for adults
+    and children cohort, and assign BMI category.
+
+4.  Identify inconsistent entries such as:
+
+    -   Change of BMI category between same-day readings (for adults and
+        children).
+
+    -   Change of 5% of weight between same-day readings (for adults and
+        children) and having different BMI categories.
+
+    -   Change of .03% per day between different day readings for both
+        BMI categories only and those with BMI values, i.e. accounting
+        for 10% of change in a 30 day period (for adults only).
+
+5.  Select only the source type with highest heirarchical source, remove
+    inconsistent entries, and indicate whether the entry was done pre or
+    post-natally.
+
+### Methods:
+
+### Creation of READ code list - available as Supplementary Material below.
+
+-   To create the list of read codes, we used SAILUKHDV.READ_CD_CV2_SCD
+    (See Supplementary Material Table 1 for full list).
+
+-   To create the list of ICD-10 codes pertaining to Obesity related
+    information, we used information from
+    <https://icd.who.int/browse10/2019/en.> (See Supplementary Material
+    Table 2 for full list).
+    
+Figure 1 shows the outline of the processes used in the algorithm. For the SAIL specific workflow, see Supplementary Material 3a.
+
+![.](P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/flowchart_methods.jpg)
+
+**Figure 1.** Flowchart of Methods.
+
+### Stage 1. Data Extraction - All BMI related information from databases between 2000-01-01 and 2022-12-31
+
+1.  Extracting ALFs with BMI categories that are recorded in WLGP from
+    2010-2022 (BMI_CAT table)
+
+    -   Extracts recording date and BMI categories already recorded in
+        the GP table
+
+2.  Extracting ALFs with BMI values that are recorded in WLGP from
+    2010-2022 (BMI_VAL table).
+
+    -   Extracts recording date and BMI values.
+
+    -   BMI values are allocated the following at this stage for all
+        ALFs:
+
+        -   \< 18.5 = underweight
+
+        -   18.5 - 24.9 = normal
+
+        -   25 - 29.9 = overweight
+
+        -   30 - 39.9 = obese
+
+3.  Extracting ALFs with height and weight values that are recorded in
+    WLGP, MIDS and NCCH tables from 2010-2022.
+
+    -   Data from WLGP
+
+        -   Extract ALFs with READ codes pertaining to height from WLGP
+            table
+
+        -   Extract ALFs with READ codes pertaining to weight from WLGP
+            table
+
+    -   Data from MIDS databae
+
+        -   Extract mother_alf_pe, ass_dt, and service_user_height
+            values from MIDS_INITIAL_ASSESSMENT.
+
+        -   Extract mother_alf_pe, ass_dt, and service_user_weight_kg
+            values from MIDS_INITIAL_ASSESSMENT.
+
+    -   Data from NCCH database
+
+        -   Extract ALF_PE, exam date, height
+
+        -   Extract ALF_PE, exam date, weight
+
+    -   All height and weight values were collated in one long table
+        separately.
+
+4.  Extracting ALFs with ICD-10 CODE from PEDW_SPELL and PEDW_DIAG
+    tables from 2010-2022.
+
+    -   Extracts ALF_PE, and admission date, and lists BMI category as
+        obese.
+
+5.  Collation of all extracted tables from data sources and linkage to
+    WDSD tables.
+
+    -   Data from all the databases are collated into a long table.
+
+    -   Multiple entries for one day from different sources are
+        allocated heirarchical rankings to indicate how they were
+        extracted:
+
+        -   bmi value from WLGP
+
+        -   height and weight from WLGP
+
+        -   height and weight from MIDS
+
+        -   height and weight from NCCH
+
+        -   bmi category from WLGP
+
+        -   icd-10 obesity codes from PEDW
+
+            -   *NB: All entries are given a rank based on source type
+                at this stage, but if an individual has BMI records for
+                a single date from all four data sources, only the entry
+                with the highest hierarchy will be kept in the final
+                table.*
+
+    -   We then linked our ALFs to the WDSD table to retrieve their WOB,
+        sex, date of death, and residency dates.
+
+        -   We remove ALFs when they have:
+
+            -   no WOB
+
+            -   invalid gender code
+
+            -   died before study start date
+
+            -   died within 31 days of study start date
+
+        -   At this stage we also calculate the number of days they
+            contributed to the study by using the study start- date and
+            either their DOD (if applicable) or the date they moved out
+            of Wales. If they are currently living in Wales, we set
+            their end of residency as the study end date. If they moved into Wales before the study start date, this was set to their residency start was set to the study start date.
+
+### Stage 2. Separating adult and children cohort.
+
+1.  We calculate the ALF's age at BMI reading by using their WOB.
+
+    -   Readings made when ALFs were between 2-18 years old were
+        categorised as children and young people.
+
+    -   Readings made when ALFs were 19-100 years old were categorised
+        as adult.
+
+### Stage 3. Allocation of BMI category using height and weight calculations
+
+1.  For adults - BMI_COMBO_ADULTS table (note: we only include entries
+    from WLGP, PEDW, and MIDS for this cohort)
+
+    -   we took the latest height reading and paired this with all the
+        weight readings to calculate BMI value using
+        weight(kg)/height(m2).
+
+2.  For children and young people - BMI_COMBO_CYP:
+
+    -   We paired all height and weight values from this cohort, and
+        calculated the difference between the readings. Height and
+        weight readings that were \> 180 days apart were excluded. We
+        used this to calculate the BMI value using
+        weight(kg)/height(m2).
+
+    -   BMI values from the Read codes (WLGP) and calculations from the
+        above step were transformed to z-scores and percentiles against
+        the sample sex and age (in months).
+
+        -   *NOTE: Full table derived from WHO BMI-for-sex-and-age can
+            be found in Supplementary Material Table 3.*
+
+### Stage 4. Identifying inconsistent entries
+
+1.  Adult cohort - BMI_UNCLEAN_ADULTS table
+
+    -   We applied a two-stage cleaning - one for same-day
+        inconsistencies and another for over-time period
+        inconsistencies.
+
+    -   Same day:
+
+        -   Multiple entries for individuals with only BMI categories
+            recorded *per day* are permitted, but those with different
+            BMI category recorded are flagged as 1.
+
+        -   Multiple entries for individuals *per day* is permitted, but
+            will be flagged as 3 if BMI value rate changes by \> 5% AND
+            the BMI categories recorded are different.
+
+        -   Entries with \> 5% BMI value changed but were within the
+            same BMI category were flagged as 5.
+
+        -   Entries with \<5% BMI value change but were different BMI
+            categories, i.e. they moved 1 category up or down, were
+            flagged as 6.
+
+    -   Different days:
+
+        -   Multiple entries for individuals across bmi recordings are
+            permitted, but will be flagged as 2 (for BMI categories
+            only) or 4 (for BMI values present) if the rate of change
+            per day is \> .03%, i.e. when weight changed 10% within a 30
+            day period.
+
+    -   Each record is checked with previous and next entries for
+        consistency, e.g. we calculate differences in the dates, BMI
+        categories, and BMI values recorded.
+
+        NOTE: All rules were applied to Adult cohort, and only same-day
+        rules were applied to CYP.
+
+Stage 5. Data output and pregnancy flags
+
+1.  For same day entries from different source types, we only keep the
+    entry(ies) with the highest ranking (see Stage 1.5)
+
+2.  Datapoints identified to be inconsistent in the previous stage are
+    removed.
+
+3.  Pregnancy flags added to indicate pregnancy related weight changes
+
+    -   Links initial_ass_dt from MIDS_INITIAL_ASSESSMENT and BABY_BIRTH
+        from MIDS_BIRTHS to calculate 9 months before and after the
+        pregnancy.
+
+    -   Readings from MIDS could have pre/post/null allocations because
+        of multiple pregnancies, but only rows with pre-natal from MIDS
+        database were kept in the final table to eliminate duplicates.
+
+    -   Readings from the other databases which are within the dates
+        specified were assigned pre- or post-natal as appropriate.
+
+4.  This is saved as BMI_CLEAN_ADULTS / BMI_CLEAN_CYP as appropriate and
+    has the following fields:
+
+| Field              | Cohort        | Description                                                                                                           | Type          |
+|------------------|------------------|--------------------|------------------|
+| alf_e              | Adult and CYP | Anonymised Linkage Field for individuals                                                                              | BIGINT        |
+| sex                |               | sex of individual                                                                                                     | CHAR(1)       |
+| wob                |               | Week of birth                                                                                                         | DATE          |
+| age_months         |               | Age in months at the time of reading                                                                                  | INTEGER       |
+| age_years          |               | Age in years at the time of reading                                                                                   | INTEGER       |
+| age_band           |               | Age band at the time of reading                                                                                       | VARCHAR(20)   |
+| bmi_dt             |               | Date of reading                                                                                                       | DATE          |
+| bmi_cat            |               | BMI category assigned for the reading                                                                                 | VARCHAR(100)  |
+| bmi_val            |               | BMI value assigned for the reading                                                                                    | DECIMAL(5)    |
+| bmi_val_cat        | CYP only      | BMI category assigned for the reading                                                                                 | VARCHAR(100)  |
+| bmi_percentile     | CYP only      | BMI percentile based on BMI value from WHO                                                                            | VARCHAR(100)  |
+| percentile_bmi_cat | CYP only      | BMI category assigned based on BMI percentile                                                                         | VARCHAR(100)  |
+| bmi_z\_score       | CYP only      | BMI z score (against population sex and age) assigned based on BMI value from WHO                                     | VARCHAR(100)  |
+| z_score_bmi_cat    | CYP only      | BMI category assigned based on BMI z score                                                                            | VARCHAR(100)  |
+| height             |               | Height value from reading                                                                                             | DECIMAL(31,8) |
+| weight             |               | Weight value from reading                                                                                             | INTEGER       |
+| source_type        |               | Type of data (BMI category / BMI value / height / weight                                                              | VARCHAR(50)   |
+| source_rank        |               | Heirarchical value assigned based on source type ( BMI value \> Height and weight \> BMI category \> ICD-10 diagnosis | CHAR(1)       |
+| source_db          |               | Data source used to extract reading                                                                                   | CHAR(4)       |
+| active_from        |               | Start of Welsh residency period when the reading was extracted                                                        | DATE          |
+| active_to          |               | End of Welsh residency period when the reading was extracted                                                          | DATE          |
+| dod                |               | Date of death                                                                                                         | DATE          |
+| follow_up_dod      |               | Number of days contribution from study start date until death date.                                                   | INTEGER       |
+| follow_up_res      |               | Number of days contribution from study start date until moving out of Wales                                           | INTEGER       |
+| bmi_flg            |               | Entry identified as inconsistent                                                                                      | CHAR(1)       |
+| bmi_year           |               | Year of BMI reading                                                                                                   | INTEGER       |
+| pregnancy_flg      |               | Entry identified as recorded when individual is pre/post 42 weeks of pregnancy period                                 | VARCHAR(20)   |
+
+### Running the BMI script for adults and children
+
+The scripts are run similarly for both adults and children, however, the
+calculation of BMI values change slightly for children as these are
+based on WHO growth chart and are also calculated as BMI-for-age (see
+Supplementary Material Table 4).
+
+The children script takes readings when individuals are 2-18.The adult
+script takes readings when the individuals are 19-100.
+
+Figure 2 shows how the BMI records are extracted from WLGP, PEDW, MIDS
+and NCCH databases.We included all ALF with valid BMI readings (BMI
+categories, BMI values, height, weight, and ICD-10 codes) between 2010
+and 2022. We then linked our ALFs to WDSD table to extract their week of
+birth (WOB), sex, date of death (DOD), and residency information.
+
+We calculated their age at BMI event using their WOB and categorised
+whether the BMI reading was done when they were Children and Young
+People (CYP; 2-18) or Adults (19-100).
+
+**Figure 2.** Flowchart of data selection, data cleaning, and creation
+of output table. 
+
+![.](P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/flowchart.png)
+
+## Results
+
+1\. In this section, we report:
+
+a.  How many individuals have BMI readings from WLGP, PEDW, MIDS, and
+    NCCH tables at the end of Stage 1, i.e., all extracted entries,
+    using upset plot.
+
+b.  Trend of BMI counts from each data source using line graphs.
+
+2\. Separately for adult/children and young people's cohort, we report
+the following:
+
+a.  Trends on BMI change between 2000-2022 using a line graph.
+
+b.  Contribution of each databases to the final output using upset
+    table.
+
+3\. Finally, we approach the algorithm as a user and we report on:
+
+a.  Proportion of our population with a BMI reading when we preserve the
+    latest BMI records in year intervals using TableOne
+
+b.  How the algorithm reduces the proportion of Unknown BMI reading in
+    the population when we use longitudinal records using stacked plots.
+
+### Counts of years of BMI data.
+
+To determine how many individuals get their BMI recorded every year, we
+counted the number of years each individual had their BMI recorded
+within the SAIL data, during the 23 year period (2000-2023). Out of the
+5.128 million individuals who lived in Wales between 2000 and 2022, only
+3.435 million (67%) have at least one valid BMI reading.
+
+We counted how long individuals have contributed to the BMI data and identified how many individuals have frequent BMI recordings.
+
+For the 4.283 million adults living in Wales between 2000 and 2022, only
+2.788 million (65.1%) have a BMI reading across the study period, with
+only 25.83% have 5 or more years worth of BMI records (Supplementary
+Material Table 5). For the 1.717 million CYP, only 834, 776 (48.56%)
+have a BMI reading across the study period, with only 1.94% having 5 or
+more years worth of BMI records (Supplementary Material Table 6).
+Additionally, boys and girls had similar BMI record counts (see Supplementary
+Material 7) while female adults across all age groups had more BMI entries with 59.1 % of the overall BMI data (Supplementary Material Table 8).
+
+
+### Data source contributions
+
+In this section, we show the counts of individuals from the whole
+population with BMI entries (Figure 3A) with entries from a
+single database, e.g. from WLGP, or MIDS or PEDW or NCCH only, and those
+with intersections with two or more databases. For the adult cohort, we
+only use WLGP, MIDS, and PEDW databases, while CYP cohort uses all four.
+
+Here show that for the CYP (Figure 3B) cohort, WLGP on its own had 46.3% of the BMI data. Derived BMI values using height and weight from NCCH has contributed an additional 53.5% of data, derived BMI values from MIDS and derived BMI categories from PEDW have contributed less than .2% to the overall BMI data.
+
+For the adult cohort (Figure 3C), WLGP is the source of 98.1% of the BMI data, with derived BMI values from MIDS contributed 0.9% and derived BMI categories from PEDW contributed 0.7% to the overall BMI data.
+
+**Figure 3.** Data source distribution for population with BMI readings.
+```{r upsetplot_all, include = FALSE}
+
+## putting all three plots in one
+## had to create these in python then load up here.
+library(png)
+img1 <- readPNG("P:/childsm/BMI/bmi_alg_report/fig_upsetplot_all.png")
+img2 <- readPNG("P:/childsm/BMI/bmi_alg_report/fig_upsetplot_cyp.png")
+img3 <- readPNG("P:/childsm/BMI/bmi_alg_report/fig_upsetplot_adults.png")
+
+
+library(abind)
+img123 <- abind::abind(img1, img2,img3, along=1)
+
+png::writePNG(img123,"P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/upset_all_three.png" )
+
+```
+![.](P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/upset_all_three.png)
+Note: Truncated to N > 500.
+
+### BMI Trends
+
+Figure 4 presents the number of BMI categories (Underweight, Normal
+Weight, Overweight, and Obese) per year from 2000-2022 for CYP and adult
+cohorts. We select the population denominator of that particular year,
+i.e. all individuals alive and living in Wales for that particular year,
+and the most recent reading for each individual in that year. When no
+BMI record is available for an individual, they are assigned 'Unknown'.
+
+**Figure 4.** Trends of overall known BMI categories for adult and CYP
+cohorts.
+```{r trend_overall, echo=FALSE, message=FALSE, fig.width=12, fig.height=10, dpi = 300}
+## create the CYP line plot
+CYP_trend <- paste0("SELECT bmi_year, count(*) as frequency 
+FROM SAILW1151V.HDR25_BMI_TABLEONE_CYP
+WHERE percentile_bmi_cat != 'Unknown'
+GROUP BY bmi_year
+ORDER BY bmi_year")
+
+bmi_CYP_trend <- sqlQuery(conn, CYP_trend)
+
+bmi_CYP_trend_plot <- ggplot(bmi_CYP_trend, 
+                       aes(x = BMI_YEAR, y = FREQUENCY)) +
+  geom_line(alpha = 0.6, linewidth = .5) +
+  labs(y = 'Frequency', title = 'A') +
+  ylim(0, 90000) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size=10),
+        axis.title = element_text(size= 10),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 10))
+
+## create adult line plot
+adult_trend <- paste0("SELECT bmi_year, count(*) as frequency 
+FROM SAILW1151V.HDR25_BMI_TABLEONE
+WHERE bmi_cat != 'Unknown'
+GROUP BY bmi_year
+ORDER BY bmi_year")
+
+bmi_adult_trend <- sqlQuery(conn, adult_trend)
+
+bmi_adult_trend_plot <- ggplot(bmi_adult_trend, 
+                       aes(x = BMI_YEAR, y = FREQUENCY)) +
+  geom_line(alpha = 0.6, linewidth = .5) +
+  labs(x = 'Year', y = 'Frequency', title = 'B') +
+  ylim(0, 800000) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=10, angle=90),
+        axis.text.y = element_text(size=10),
+        axis.title = element_text(size= 10),
+        axis.title.y = element_text(size = 10))
+ 
+
+# use patchwork
+trend_overall <- bmi_CYP_trend_plot / bmi_adult_trend_plot
+ggsave(filename = 'P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/trend_overall.png', width = 10, height = 7, device = "tiff", dpi = 500)
+
+trend_overall
+```
+
+Figure 5 shows the trend of known BMI categories for CYP and adult
+cohort between 2000-2010. The majority of CYP cohort have Normal weight,
+with the three other categories having similar counts. For adults, the
+majority Obese and Overweight categories have the highest counts,
+followed by Normal weight, and Underweight. Both CYP and adult cohort
+have high counts of unknown BMI each year (Supplementary Material
+9).For counts and proportions of BMI categories from each data source,
+see Supplementary Material 10 and 11.
+
+**Figure 5.** Trend of known BMI categories count of CYP and adult
+cohort grouped by category.
+```{r trend_known, echo=FALSE, message=FALSE, fig.width=12, fig.height=10, dpi = 300}
+## creating for CYP
+CYP_trend_known <- paste0("
+SELECT
+	*
+FROM
+  (
+  SELECT bmi_year, PERCENTILE_BMI_CAT, count(*) AS frequency
+  FROM SAILW1151V.HDR25_BMI_TABLEONE_CYP
+  where PERCENTILE_BMI_CAT != 'Unknown'
+  GROUP BY bmi_year, PERCENTILE_BMI_CAT
+  ORDER by bmi_year
+  )
+WHERE frequency > 10")
+
+CYP_trend_known_run <- sqlQuery(conn, CYP_trend_known)
+
+# creating for adults
+adult_trend_known <- paste0("
+SELECT
+	*
+FROM
+  (
+  SELECT bmi_year, bmi_cat, count(*) AS frequency
+  FROM SAILW1151V.HDR25_BMI_TABLEONE_ADULT
+  where bmi_cat != 'Unknown'
+  GROUP BY bmi_year, bmi_cat
+  ORDER by bmi_year
+  )
+WHERE frequency > 10")
+
+adult_trend_known_run <- sqlQuery(conn, adult_trend_known)
+
+## creating plots 
+CYP_trend_known_plot <- ggplot(CYP_trend_known_run, 
+                                     aes(x=BMI_YEAR, y=FREQUENCY, group=factor(PERCENTILE_BMI_CAT, levels = c("Underweight", "Normal weight", "Overweight", "Obese"))))+
+  geom_line(alpha = 0.6, linewidth = 0.5) +
+  geom_point(size = 3, aes(shape=factor(PERCENTILE_BMI_CAT, levels = c("Underweight", "Normal weight", "Overweight", "Obese")))) +
+  scale_x_continuous(breaks = 2000:2022)+
+  ylim(0, 70000) +
+  labs(x = 'Year', y = 'Frequency', title = 'A') +
+  theme_classic() +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size=10),
+        axis.title = element_text(size=10),
+        axis.title.x = element_blank())
+  
+adult_trend_known_plot <- ggplot(adult_trend_known_run, aes(x=BMI_YEAR, y=FREQUENCY, group=factor(BMI_CAT, levels = c("Underweight", "Normal weight", "Overweight", "Obese"))))+
+  geom_line(alpha = 0.6, linewidth = 0.5) +
+  geom_point(size = 3, aes(shape=factor(BMI_CAT, levels = c("Underweight", "Normal weight", "Overweight", "Obese")))) +
+  scale_x_continuous(breaks = 2000:2022)+
+  ylim(0, 300000) +
+  labs(x = 'Year', y = 'Frequency', title='B') +
+  theme(legend.position = "right") +
+  scale_shape_discrete(name = 'BMI Categories') +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=10, angle=90),
+        axis.text.y = element_text(size=10),
+        axis.title = element_text(size= 10))
+
+# use patchwork and save as png
+trend_known <- CYP_trend_known_plot / adult_trend_known_plot
+ggsave(filename = 'P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/trend_known.png', width = 10, height = 7, device = "tiff", dpi = 500 )
+trend_known
+```
+
+## Baseline characteristics
+
+In this section, we report how many individuals living in Wales in each
+month from 2000-2022 have known BMI records. To identify our yearly
+cohort, the following considerations were done:
+
+1.  Identified ALFs who were born before or on 2000-01-01 and have a
+    Welsh residency in the WDSD table from 2000-2022.
+
+2.  ALFs were flagged to be living in Wales if they are alive and have a
+    Welsh residency at the beginning of each month of the year.
+
+3.  ALFs were classified as children (2-18yo) or adult (19-100) in that
+    month.
+
+4.  When ALFs pass away in a certain month, they are only included up
+    until the previous month, i.e., if date of death is on the 15th Feb,
+    we only include them until 31st January.
+
+5.  We then linked the BMI_CLEAN table (adult/CYP) to identify whether
+    they have a BMI reading.
+
+6.  When no reading was available for an ALF for that particular month,
+    they are assigned 'Unknown' for the following categories: AGE BAND
+    and BMI CATEGORY.
+
+### TableOne reports
+
+Here we show the baseline characteristics of the CYP (Table 2) adult
+(Table 3) cohorts. We aggregated years 2000-2004, 2005-2009, 2010-2014,
+2015-2019, and 2020-2022.
+
+The restrictions put in place during the COVID-19 pandemic had an impact
+on the on the proportion of annual recording and preservation of BMI
+records within one year. For CYP, the annual proportion of Unknowns were
+between 86-88% of the population, whereas this increased to 95% at the
+end of 2020, 94% and 91% at the end of 2021 and 2022 respectively
+(Supplementary Material 12). Similar proportions were observed when we
+preserve BMI records for 1 year period (Supplementary Material 13.) For
+the breakdown of the population characteristics grouped by BMI
+categories in 2022, see Supplementary Material 14.
+
+For adults, between 2017 and 2019, there were 74% of Unknown BMI
+categories. This went up to 82% at the end of 2020, and decreased to 79%
+at the end of 2021, and 75% at the end of 2022 (Supplementary Material
+15). Similar proportions were found when preserving for a 1 year period
+(Supplementary Material 16). For the breakdown of the population
+characteristics grouped by BMI categories in 2022, see Supplementary
+Material 17.
+
+**Table 2.** Characteristics of the CYP population grouped by years.
+```{r table1 for cyp, eval = TRUE, echo=FALSE, message=FALSE}
+table2 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_CYP")
+
+table2_run <- sqlQuery(conn, table2)
+
+table2_run$SEX[table2_run$SEX == 1] <- 'Male'
+table2_run$SEX[table2_run$SEX == 2] <- 'Female'
+table2_run <- table2_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+
+## creating the gtsummary
+theme_gtsummary_compact()
+table1_CYP <- table2_run %>%
+  select(DENOM_YEAR, SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  #making NA value explicit level of factor
+  tbl_summary(by = DENOM_YEAR,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})"),
+             missing = "no",
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          PERCENTILE_BMI_CAT ~ "BMI category",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt()
+
+table1_CYP
+```
+
+**Table 3.** Characteristics of the adult population grouped by years.
+
+```{r table1 for adults, eval=TRUE, echo=FALSE, message=FALSE}
+table1 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT")
+
+table1_run <- sqlQuery(conn, table1)
+
+table1_run$SEX[table1_run$SEX == 1] <- 'Male'
+table1_run$SEX[table1_run$SEX == 2] <- 'Female'
+table1_run <- table1_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+## creating the gtsummary
+theme_gtsummary_compact()
+table1_adults <- table1_run %>%
+  select(DENOM_YEAR, SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  tbl_summary(by = DENOM_YEAR,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})"),
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          BMI_CAT ~ "BMI category",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt() %>%
+  tab_header("Characteristics of Adult population")
+
+table1_adults
+```
+
+### Preservation of BMI records
+
+The following plots show the proportion of our population with a BMI
+reading when we preserve the latest BMI records within 1 year, 5 years
+and the entire study period.
+
+Here we demonstrate that the number of individuals with Unknown BMI is
+reduced when we preserve BMI readings. For the 4.28 million adults in
+our population, the proportion of Unknowns is reduced from 75% within 1
+year interval down to 50% when we preserve readings within 5 years, and
+down to 27% when we preserve all readings (from 2010-2022). For the 1.72
+million CYP, the proportion of Unknowns is reduced from 91% within 1
+year interval to 69% within 5 years, and down to 33% when we preserve
+across all readings.
+
+**Figure 6.** Preservation of BMI records for CYP cohort.
+```{r stacked plots CYP, echo = FALSE, message = FALSE, fig.width = 12, fig.height = 8, dpi = 300}
+## using facet to create stacked plots
+all_three_CYP <- paste0("SELECT lookback, BMI_MONTH, PERCENTILE_BMI_CAT, COUNTS FROM SAILW1151V.HDR25_BMI_CAT_DENOM_AGG_TABLE_CYP
+                   WHERE bmi_year >= '2005'")
+bmi_all_three_CYP <- sqlQuery(conn, all_three_CYP)
+
+# changing the names of lookback values
+bmi_all_three_CYP$LOOKBACK <- str_replace_all(bmi_all_three_CYP$LOOKBACK, 'YR', ' Year')
+
+counts_all_three_CYP <- bmi_all_three_CYP %>%
+  group_by(LOOKBACK, BMI_MONTH, PERCENTILE_BMI_CAT) %>%
+  summarise(n = sum(COUNTS)) %>%
+  mutate(perc = n / sum(n) * 100)
+
+preserved_CYP <- ggplot(counts_all_three_CYP %>%
+                             mutate(BMI_MONTH = factor(BMI_MONTH, levels = c("01-2005", "02-2005", "03-2005", "04-2005", "05-2005", "06-2005", "07-2005", "08-2005", "09-2005", "10-2005", "11-2005", "12-2005",
+                                                                             "01-2006", "02-2006", "03-2006", "04-2006", "05-2006", "06-2006", "07-2006", "08-2006", "09-2006", "10-2006", "11-2006", "12-2006",
+                                                                             "01-2007", "02-2007", "03-2007", "04-2007", "05-2007", "06-2007", "07-2007", "08-2007", "09-2007", "10-2007", "11-2007", "12-2007",
+                                                                             "01-2008", "02-2008", "03-2008", "04-2008", "05-2008", "06-2008", "07-2008", "08-2008", "09-2008", "10-2008", "11-2008", "12-2008",
+                                                                             "01-2009", "02-2009", "03-2009", "04-2009", "05-2009", "06-2009", "07-2009", "08-2009", "09-2009", "10-2009", "11-2009", "12-2009",
+                                                                             "01-2010", "02-2010", "03-2010", "04-2010", "05-2010", "06-2010", "07-2010", "08-2010", "09-2010", "10-2010", "11-2010", "12-2010",
+                                                                             "01-2011", "02-2011", "03-2011", "04-2011", "05-2011", "06-2011", "07-2011", "08-2011", "09-2011", "10-2011", "11-2011", "12-2011",
+                                                                             "01-2012", "02-2012", "03-2012", "04-2012", "05-2012", "06-2012", "07-2012", "08-2012", "09-2012", "10-2012", "11-2012", "12-2012",
+                                                                             "01-2013", "02-2013", "03-2013", "04-2013", "05-2013", "06-2013", "07-2013", "08-2013", "09-2013", "10-2013", "11-2013", "12-2013",
+                                                                             "01-2014", "02-2014", "03-2014", "04-2014", "05-2014", "06-2014", "07-2014", "08-2014", "09-2014", "10-2014", "11-2014", "12-2014",
+                                                                             "01-2015", "02-2015", "03-2015", "04-2015", "05-2015", "06-2015", "07-2015", "08-2015", "09-2015", "10-2015", "11-2015", "12-2015",
+                                                                             "01-2016", "02-2016", "03-2016", "04-2016", "05-2016", "06-2016", "07-2016", "08-2016", "09-2016", "10-2016", "11-2016", "12-2016",
+                                                                             "01-2017", "02-2017", "03-2017", "04-2017", "05-2017", "06-2017", "07-2017", "08-2017", "09-2017", "10-2017", "11-2017", "12-2017",
+                                                                             "01-2018", "02-2018", "03-2018", "04-2018", "05-2018", "06-2018", "07-2018", "08-2018", "09-2018", "10-2018", "11-2018", "12-2018",
+                                                                             "01-2019", "02-2019", "03-2019", "04-2019", "05-2019", "06-2019", "07-2019", "08-2019", "09-2019", "10-2019", "11-2019", "12-2019",
+                                                                             "01-2020", "02-2020", "03-2020", "04-2020", "05-2020", "06-2020", "07-2020", "08-2020", "09-2020", "10-2020", "11-2020", "12-2020",
+                                                                             "01-2021", "02-2021", "03-2021", "04-2021", "05-2021", "06-2021", "07-2021", "08-2021", "09-2021", "10-2021", "11-2021", "12-2021",
+                                                                             "01-2022", "02-2022", "03-2022", "04-2022", "05-2022", "06-2022", "07-2022", "08-2022", "09-2022", "10-2022", "11-2022", "12-2022"))), 
+                           
+                           aes(x = BMI_MONTH, y = perc, fill = PERCENTILE_BMI_CAT)) +
+  geom_col(alpha = 0.6, linewidth =1) +
+  facet_wrap(~LOOKBACK) +
+  xlab("Month and Year of BMI recording") +
+  ylab("Percentage") +
+  scale_x_discrete(name = 'Month and Year', breaks=c("01-2005",
+                                                     "01-2010",
+                                                     "01-2015",
+                                                     "01-2020")) +
+  scale_fill_manual(name = "BMI Categories", breaks =c('Underweight', 'Normal weight', 'Overweight', 'Obese', 'Unknown'),
+                    values =c('black', 'green', 'purple', 'red', 'gray')) +
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=7, angle=90))
+
+#saving file
+ggsave(filename = 'P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/preseved_CYP.png', width = 10, height = 7, device = "tiff", dpi = 500 )
+
+preserved_CYP
+```
+
+**Figure 7.** Preserving BMI records for adult population.
+```{r stacked plots adults, echo = FALSE, message = FALSE, fig.width = 12, fig.height = 8, dpi = 300}
+## using facet to create stacked plots
+all_three <- paste0("SELECT lookback, BMI_MONTH, BMI_CAT, COUNTS FROM SAILW1151V.HDR25_BMI_CAT_DENOM_AGG_TABLE
+                   WHERE bmi_year >= '2005'")
+bmi_all_three <- sqlQuery(conn, all_three)
+
+# changing the names of lookback values
+bmi_all_three$LOOKBACK <- str_replace_all(bmi_all_three$LOOKBACK, 'YR', ' Year')
+
+
+counts_all_three <- bmi_all_three %>%
+  group_by(LOOKBACK, BMI_MONTH, BMI_CAT) %>%
+  summarise(n = sum(COUNTS)) %>%
+  mutate(perc = n / sum(n) * 100)
+
+preserved_adults <- ggplot(counts_all_three %>%
+                            mutate(BMI_MONTH = factor(BMI_MONTH, levels = c("01-2005", "02-2005", "03-2005", "04-2005", "05-2005", "06-2005", "07-2005", "08-2005", "09-2005", "10-2005", "11-2005", "12-2005",
+                                                                            "01-2006", "02-2006", "03-2006", "04-2006", "05-2006", "06-2006", "07-2006", "08-2006", "09-2006", "10-2006", "11-2006", "12-2006",
+                                                                            "01-2007", "02-2007", "03-2007", "04-2007", "05-2007", "06-2007", "07-2007", "08-2007", "09-2007", "10-2007", "11-2007", "12-2007",
+                                                                            "01-2008", "02-2008", "03-2008", "04-2008", "05-2008", "06-2008", "07-2008", "08-2008", "09-2008", "10-2008", "11-2008", "12-2008",
+                                                                            "01-2009", "02-2009", "03-2009", "04-2009", "05-2009", "06-2009", "07-2009", "08-2009", "09-2009", "10-2009", "11-2009", "12-2009",
+                                                                            "01-2010", "02-2010", "03-2010", "04-2010", "05-2010", "06-2010", "07-2010", "08-2010", "09-2010", "10-2010", "11-2010", "12-2010",
+                                                                            "01-2011", "02-2011", "03-2011", "04-2011", "05-2011", "06-2011", "07-2011", "08-2011", "09-2011", "10-2011", "11-2011", "12-2011",
+                                                                            "01-2012", "02-2012", "03-2012", "04-2012", "05-2012", "06-2012", "07-2012", "08-2012", "09-2012", "10-2012", "11-2012", "12-2012",
+                                                                            "01-2013", "02-2013", "03-2013", "04-2013", "05-2013", "06-2013", "07-2013", "08-2013", "09-2013", "10-2013", "11-2013", "12-2013",
+                                                                            "01-2014", "02-2014", "03-2014", "04-2014", "05-2014", "06-2014", "07-2014", "08-2014", "09-2014", "10-2014", "11-2014", "12-2014",
+                                                                            "01-2015", "02-2015", "03-2015", "04-2015", "05-2015", "06-2015", "07-2015", "08-2015", "09-2015", "10-2015", "11-2015", "12-2015",
+                                                                            "01-2016", "02-2016", "03-2016", "04-2016", "05-2016", "06-2016", "07-2016", "08-2016", "09-2016", "10-2016", "11-2016", "12-2016",
+                                                                            "01-2017", "02-2017", "03-2017", "04-2017", "05-2017", "06-2017", "07-2017", "08-2017", "09-2017", "10-2017", "11-2017", "12-2017",
+                                                                            "01-2018", "02-2018", "03-2018", "04-2018", "05-2018", "06-2018", "07-2018", "08-2018", "09-2018", "10-2018", "11-2018", "12-2018",
+                                                                            "01-2019", "02-2019", "03-2019", "04-2019", "05-2019", "06-2019", "07-2019", "08-2019", "09-2019", "10-2019", "11-2019", "12-2019",
+                                                                            "01-2020", "02-2020", "03-2020", "04-2020", "05-2020", "06-2020", "07-2020", "08-2020", "09-2020", "10-2020", "11-2020", "12-2020",
+                                                                            "01-2021", "02-2021", "03-2021", "04-2021", "05-2021", "06-2021", "07-2021", "08-2021", "09-2021", "10-2021", "11-2021", "12-2021",
+                                                                            "01-2022", "02-2022", "03-2022", "04-2022", "05-2022", "06-2022", "07-2022", "08-2022", "09-2022", "10-2022", "11-2022", "12-2022"))), 
+                          
+                          aes(x = BMI_MONTH, y = perc, fill = BMI_CAT)) +
+  geom_col(alpha = 0.6, linewidth =1) +
+  facet_wrap(~LOOKBACK) +
+  xlab("Month and Year of BMI recording") +
+  ylab("Percentage") +
+  scale_x_discrete(name = 'Month and Year', breaks=c("01-2005",
+                                                     "01-2010",
+                                                     "01-2015",
+                                                     "01-2020")) +
+  scale_fill_manual(name = "BMI Categories", breaks =c('Underweight', 'Normal weight', 'Overweight', 'Obese', 'Unknown'),
+                    values =c('black', 'green', 'purple', 'red', 'gray')) +
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=7, angle=90))
+
+
+library(ggthemes)
+
+#saving file
+ggsave(filename = 'P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/preseved_adults.png', width = 10, height = 7, device = "tiff", dpi = 500 )
+
+preserved_adults
+
+
+```
+
+## Conclusions
+
+Does using different data sources improve the coverage?
+
+-   For the adult cohort, WLGP provided 88.4% of the BMI records from
+    2010-2022. Only 11.6% were contributed by PEDW and MIDS data
+    sources.
+
+-   For the CYP cohort, WLGP provided 62.2%, while NCCH provided 47.1%
+    of the BMI reccords from 2010-2022. MIDS and PEDW provided \< 1% of
+    the data.
+
+-   Our method shows that the majority of BMI data comes from primary
+    care.\
+    Having a cohort specific data sources could increase the recapturing
+    of BMI records, as seen from the CYP cohort.
+
+Does using preserving longitudinal BMI records improve the coverage?
+
+-   Our method show that preserving a BMI record to 5 or 23 years yields
+    higher coverage compared to preserving for only 1 year.
+
+------------------------------------------------------------------------
+
+## Supplementary Material
+
+**1.** Read codes pertaining to BMI related events in WLGP database
+
+```{r bmi_code, echo = FALSE, message=FALSE}
+# Code list
+bmi_lookup <- data.frame (bmi_code = c("2293","229..","229Z.","2292","2294","2295","2291","22A..","22A1.","22A2.","22A3.","22A4.","22A5.","22A6.","22AA.","22AZ.","1266","1444","22K3.","22K..","22K1.","22K2.","22K4.","22K5.","22K6.","22K7.","22K8.","22K9.","22KC.","22KC.","22KD.","22KD.","22KE.","22KE.","66C4.","66C6.","66CE.","8CV7.","8T11.","C38..","C380.","C3800","C3801","C3802","C3803","C3804","C3805","C3806","C3807","C38z.","C38z0","Cyu7.","22K4.","22A1.","22A2.","22A3.","22A4.","22A5.","22A6.","22AA.","R0348","66C1.","66C2.","66C5.","66CX.","66CZ.","9hN..","9OK..","9OK1.","9OK3.","9OK2.","9OK4.","9OK5.","9OK6.","9OK7.","9OK8.","9OKA.","9OKZ.","C38y0"),
+             description = c("O/E -height within 10% average","O/E - height","O/E - height NOS","O/E - height 10-20% < average","O/E-height 10-20% over average","O/E -height > 20% over average","O/E-height > 20% below average","O/E - weight","O/E - weight > 20% below ideal","O/E -weight 10-20% below ideal","O/E - weight within 10% ideal","O/E - weight 10-20% over ideal","O/E - weight > 20% over ideal","O/E - Underweight","Overweight","O/E - weight NOS","FH: Obesity","H/O: obesity","Body Mass Index low K/M2","Body Mass Index","Body Mass Index normal K/M2","Body Mass Index high K/M2","Body mass index index 25-29 - overweight","Body mass index 30+ - obesity","Body mass index less than 20","Body mass index 40+ - severely obese","Body mass index 20-24 - normal","Body mass index centile","Obese class I (body mass index 30.0 - 34.9)","Obese class I (BMI 30.0-34.9)","Obese class II (body mass index 35.0 - 39.9)","Obese class II (BMI 35.0-39.9)","Obese class III (BMI equal to or greater than 40.0)","Obese cls III (BMI eq/gr 40.0)","Has seen dietician - obesity","Treatment of obesity started","Reason for obesity therapy - occupational","Anti-obesity drug therapy commenced","Rfrrl multidisip obesity clin","Obesity/oth hyperalimentation","Obesity","Obesity due to excess calories","Drug-induced obesity","Extrem obesity+alveol hypovent","Morbid obesity","Central obesity","Generalised obesity","Adult-onset obesity","Lifelong obesity","Obesity/oth hyperalimentat NOS","Simple obesity NOS","[X]Obesity+oth hyperalimentatn","BMI 25-29 - overweight","O/E - weight > 20% below ideal","O/E -weight 10-20% below ideal","O/E - weight within 10% ideal","O/E - weight 10-20% over ideal","O/E - weight > 20% over ideal","O/E - Underweight","Overweight","[D] Underweight","Itinital obesity assessment","Follow-up obesity assessment","Treatment of obesity changed","Obesity multidisciplinary case review","Obesity monitoring NOS","Exception reporting: obesity quality indicators","Obesity monitoring admin.","Attends obesity monitoring","Obesity monitoring default","Refuses obesity monitoring","Obesity monitoring 1st letter","Obesity monitoring 2nd letter","Obesity monitoring 3rd letter","Obesity monitoring verbal inv.","Obesity monitor phone invite","Obesity monitoring check done","Obesity monitoring admin.NOS","Pickwickian syndrome"),
+             complexity = c("where event_val between x and y (depending on unit)","where event_val between x and y (depending on unit)","where event_val between x and y (depending on unit)","height","height","height","height","where event_val between 32 and 250","where event_val between 32 and 250","where event_val between 32 and 250","where event_val between 32 and 250","where event_val between 32 and 250","where event_val between 32 and 250","where event_val between 32 and 250","where event_val between 32 and 250","where event_val between 32 and 250","Obese","Obese","Underweight","bmi","Normal weight","Overweight/Obese","Overweight","Obese","Underweight","Obese","Normal weight","bmi","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Overweight","Underweight","Underweight","Normal weight","Overweight","Overweight","Underweight","Overweight","Underweight","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese","Obese"),
+             category = c("height","height","height","height","height","height","height","weight","weight","weight","weight","weight","weight","weight","weight","weight","obese","obese","underweight","bmi","normal weight","obese","overweight","obese","underweight","obese","normal weight","bmi","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","overweight","underweight","underweight","normal weight","overweight","overweight","underweight","overweight","underweight","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese","obese")
+            )
+
+DT::datatable(bmi_lookup, rownames = FALSE, extensions=c("Buttons"),options = list(dom= "Bfrtip", buttons = c("copy","csv")))
+```
+
+2. ICD-10 codes pertaining to BMI related events in PEDW database
+
+```{r ICD-10 codes, echo = FALSE, message=FALSE}
+icd_10 <- data.frame (icd_code = c("E66.0", "E66.1", "E66.2", "E66.8", "E66.9"),
+          description = c("Obesity due to excess calories", "Drug-induced obesity (use additional external cause code (Chapter XX, if desired, to identify the drug)", "Extreme obesity with alveolar hypoventilation (Obesity hypoventilation syndrome / Pickwickian syndrome)", "Other obesity (Morbid obesity)", "Obesity, unspecified (Simple obesity, NOS)"),
+          category = c("obese", "obese", "obese", "obese", "obese")
+          )
+
+DT::datatable(icd_10, rownames = FALSE, extensions=c("Buttons"),options = list(dom= "Bfrtip", buttons = c("copy","csv")))
+```
+
+3a. Methods flowchart using SAIL Databank sources.
+![.](P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/flowchart_supp.jpg)
+
+3. Allocations of BMI categories using percentiles and z-scores from
+WHO guidelines.
+
+```{r centiles table, echo = FALSE, message=FALSE}
+centiles <- read.csv("P:/childsm/BMI/bmi_alg_report/centiles_table.csv")
+
+DT::datatable(centiles, rownames = FALSE, extensions=c("Buttons"),options = list(dom= "Bfrtip", buttons = c("copy","csv")))
+```
+
+**4.** Conversion tables used for standardising height
+```{r standardised heights, echo = FALSE, message = FALSE}
+heights <- read_excel("P:/childsm/BMI/bmi_alg_report/standardising height.xlsx")
+
+DT::datatable(heights, rownames = FALSE, extensions=c("Buttons"),options = list(dom= "Bfrtip", buttons = c("copy","csv")))
+```
+
+5. CYP BMI yearly counts
+```{r yearly counts CYP, echo=FALSE, message=FALSE}
+yearly_counts_CYP <- paste0("SELECT * FROM sailw1151v.HDR25_BMI_YEARLY_COUNTS_CYP
+ORDER BY total_bmi_years, contribution")
+
+bmi_yearly_counts_CYP <- sqlQuery(conn, yearly_counts_CYP)
+
+
+# add a separator
+bmi_yearly_counts_CYP <- format(bmi_yearly_counts_CYP, big.mark=' ')
+bmi_yearly_counts_CYP <- bmi_yearly_counts_CYP %>%
+  rename("Total BMI years"="TOTAL_BMI_YEARS",
+         "Total counts" = "COUNTS" ,
+         "Percentage" = "PERCENTAGE")
+
+
+DT::datatable(bmi_yearly_counts_CYP, rownames = FALSE, extensions=c("Buttons"),options = list(dom= "Bfrtip", buttons = c("copy","csv")))
+```
+
+6. Adult BMI yearly counts
+```{r yearly counts adults, echo=FALSE, message=FALSE}
+yearly_counts_adults <- paste0("SELECT * FROM sailw1151v.HDR25_BMI_YEARLY_COUNTS_ADULTS
+ORDER BY total_bmi_years, contribution")
+
+bmi_yearly_counts_adults <- sqlQuery(conn, yearly_counts_adults)
+
+
+# add a separator
+bmi_yearly_counts_adults <- format(bmi_yearly_counts_adults, big.mark=' ')
+bmi_yearly_counts_adults <- bmi_yearly_counts_adults %>%
+  rename("Total BMI years"="TOTAL_BMI_YEARS",
+         "Total counts" = "COUNTS" ,
+         "Percentage" = "PERCENTAGE")
+
+
+DT::datatable(bmi_yearly_counts_adults, rownames = FALSE, extensions=c("Buttons"),options = list(dom= "Bfrtip", buttons = c("copy","csv")))
+```
+
+7. Male and Female records across age group for CYP
+```{r CYP male and female, echo = FALSE, message = FALSE}
+CYP_sex_dist <- paste0("SELECT
+	*,
+	ROUND((counts * 1.0 / SAILW1151V.HDR25_BMI_TOTAL_CYP_CLEAN * 100), 2) AS percentage
+FROM
+	(
+	SELECT 
+		sex, age_band,
+		count(*) AS counts
+	FROM SAILW1151V.HDR25_BMI_CLEAN_CYP
+	GROUP BY sex, age_band
+	ORDER BY sex, age_band
+	)")
+
+CYP_sex_dist_run <- sqlQuery(conn, CYP_sex_dist)
+
+
+DT::datatable(CYP_sex_dist_run, rownames = FALSE, extensions=c("Buttons"),options = list(dom= "Bfrtip", buttons = c("copy","csv")))
+
+```
+
+8. Male and Female records across age group for CYP
+```{r adult male and female, echo = FALSE, message = FALSE}
+adult_sex_dist <- paste0("SELECT
+	*,
+	ROUND((counts * 1.0 / SAILW1151V.HDR25_BMI_TOTAL_ADULT_CLEAN * 100), 2) AS percentage
+FROM
+	(
+	SELECT 
+		sex, age_band,
+		count(*) AS counts
+	FROM SAILW1151V.HDR25_BMI_CLEAN_ADULTS
+	GROUP BY sex, age_band
+	ORDER BY sex, age_band
+	)")
+
+adult_sex_dist_run <- sqlQuery(conn, adult_sex_dist)
+
+DT::datatable(adult_sex_dist_run, rownames = FALSE, extensions=c("Buttons"),options = list(dom= "Bfrtip", buttons = c("copy","csv")))
+
+```
+
+9. Trends of known and unknown BMI categories for CYP and adult
+cohort.
+```{r trend_with_unknown, echo=FALSE, message=FALSE, fig.width=10, fig.height=12, dpi = 300}
+## creating for CYP
+CYP_trend_unknown <- paste0("
+SELECT
+	*
+FROM
+  (
+  SELECT bmi_year, PERCENTILE_BMI_CAT, count(*) AS frequency
+  FROM SAILW1151V.HDR25_BMI_TABLEONE_CYP
+  WHERE PERCENTILE_BMI_CAT IS NOT NULL
+  GROUP BY bmi_year, PERCENTILE_BMI_CAT
+  ORDER by bmi_year
+  )
+WHERE frequency > 10")
+
+CYP_trend_unknown_run <- sqlQuery(conn, CYP_trend_unknown)
+
+CYP_trend_unknown_run_plot <- ggplot(CYP_trend_unknown_run, 
+                                     aes(x=BMI_YEAR, y=FREQUENCY, group=factor(PERCENTILE_BMI_CAT, levels = c("Underweight", "Normal weight", "Overweight", "Obese", "Unknown"))))+
+  geom_line(alpha = 0.6, linewidth = 0.5) +
+  geom_point(size = 3, aes(shape=factor(PERCENTILE_BMI_CAT, levels = c("Underweight", "Normal weight", "Overweight", "Obese", "Unknown")))) +
+  scale_x_continuous(breaks = 2000:2022)+
+  ylim(0, 800000) +
+  labs(x = 'Year', y = 'Frequency', title = 'A') +
+  theme_classic() +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size=10),
+        axis.title = element_text(size= 10))
+
+## creating plot for adult
+adult_trend_unknown <- paste0("
+SELECT
+	*
+FROM
+  (
+  SELECT bmi_year, bmi_cat, count(*) AS frequency
+  FROM SAILW1151V.HDR25_BMI_TABLEONE_ADULT
+  WHERE BMI_CAT IS NOT NULL
+  GROUP BY bmi_year, bmi_cat
+  ORDER by bmi_year
+  )
+WHERE frequency > 10")
+
+adult_trend_unknown_run <- sqlQuery(conn, adult_trend_unknown)
+
+
+adult_trend_unknown_run_plot <- ggplot(adult_trend_unknown_run, 
+                                       aes(x=BMI_YEAR, y=FREQUENCY, group=factor(BMI_CAT, levels = c("Underweight", "Normal weight", "Overweight", "Obese", "Unknown"))))+
+  geom_line(alpha = 0.6, linewidth = 0.5) +
+  geom_point(size = 3, aes(shape=factor(BMI_CAT, levels = c("Underweight", "Normal weight", "Overweight", "Obese", "Unknown")))) +
+  scale_x_continuous(breaks = 2000:2022) +
+  ylim(0, 2500000) +
+  labs(x = 'Year', y = 'Frequency', title='B') +
+  theme(legend.position = "right") +
+  scale_shape_discrete(name = 'BMI Categories') +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=10, angle=90),
+        axis.text.y = element_text(size=10),
+        axis.title = element_text(size= 10))
+
+
+
+# use patchwork
+trend_with_unknown <- CYP_trend_unknown_run_plot / adult_trend_unknown_run_plot
+
+# and save file
+ggsave(filename = 'P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/trend_with_unknown.png', width = 10, height = 7 , device = "tiff", dpi = 500 )
+trend_with_unknown
+```
+
+10. Stacked plots for counts of BMI categories from sources for CYP
+cohort.
+```{r stacked plots for cyp source, echo = FALSE, message=FALSE, fig.width=12, fig.height=7, dpi = 300}
+## CYP source stacked plots
+CYP_source <- paste0("SELECT
+	*
+FROM
+(
+SELECT bmi_year, percentile_bmi_cat, source_db, count(*) AS frequency
+FROM SAILW1151V.HDR25_BMI_TABLEONE_CYP
+GROUP BY bmi_year, source_db, percentile_bmi_cat
+ORDER by bmi_year
+)
+WHERE frequency > 10")
+bmi_CYP_source <- sqlQuery(conn, CYP_source)
+
+## this df and plot shows the percentage of the bmi categories for each source.
+perc_bmi_CYP_source  <- bmi_CYP_source  %>%
+  group_by(BMI_YEAR, SOURCE_DB, PERCENTILE_BMI_CAT) %>%
+  summarise(n = sum(FREQUENCY)) %>%
+  mutate(perc = n / sum(n))
+
+## this plot uses different Y-axis to zoom in each of the source
+freq_CYP_all_source <- ggplot(bmi_CYP_source,
+                                aes(x = BMI_YEAR, y = FREQUENCY, fill = PERCENTILE_BMI_CAT)) +
+  geom_col(alpha = 0.6, linewidth =1) +
+  facet_wrap(~SOURCE_DB,  scales='free_y') +
+  xlab("Year of BMI recording") +
+  ylab("Counts") +
+  scale_fill_manual(name = "BMI Categories", breaks =c('Underweight', 'Normal weight', 'Overweight', 'Obese', 'Unknown'),
+                    values =c('black', 'green', 'purple', 'red', 'gray')) +
+  theme_classic()
+
+
+# this olots the percentage of bmi cat per source
+perc_CYP_all_source <- ggplot(perc_bmi_CYP_source,
+                                aes(x = BMI_YEAR, y = perc, fill = PERCENTILE_BMI_CAT)) +
+  geom_col(alpha = 0.6, linewidth =1) +
+  facet_wrap(~SOURCE_DB) +
+  xlab("Year of BMI recording") +
+  ylab("Percentage") +
+  scale_fill_manual(name = "BMI Categories", breaks =c('Underweight', 'Normal weight', 'Overweight', 'Obese', 'Unknown'),
+                    values =c('black', 'green', 'purple', 'red', 'gray')) +
+  theme_classic()
+
+# use patchwork
+CYP_stacked <- freq_CYP_all_source / perc_CYP_all_source
+
+# saving file
+ggsave(filename = 'P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/stacked_CYP.png', width = 8, height = 5, device = "tiff", dpi = 300 )
+
+CYP_stacked
+```
+
+11. Counts of BMI categories from each source (Adults)
+```{r stacked plots for source, echo = FALSE, message=FALSE, fig.width=12, fig.height=7, dpi = 300}
+##### trying stacked plot for the source
+adults_source <- paste0("SELECT
+	*
+FROM
+(
+SELECT bmi_year, bmi_cat, source_db, count(*) AS frequency
+FROM SAILW1151V.HDR25_BMI_TABLEONE_ADULT
+GROUP BY bmi_year, source_db, bmi_cat
+ORDER by bmi_year
+)
+WHERE frequency > 10")
+bmi_adults_source <- sqlQuery(conn, adults_source)
+
+## this creates a df and table with percentage of the BMI cat per year from each source.
+counts_bmi_adults_source  <- bmi_adults_source  %>%
+  group_by(BMI_YEAR, SOURCE_DB, BMI_CAT) %>%
+  summarise(n = sum(FREQUENCY)) %>%
+  mutate(perc = n / sum(n))
+
+## this creates a stacked plot of the counts per source
+freq_adults_all_source <- ggplot(bmi_adults_source,
+                            aes(x = BMI_YEAR, y = FREQUENCY, fill = BMI_CAT)) +
+  geom_col(alpha = 0.6, linewidth =1) +
+  facet_wrap(~SOURCE_DB, scales='free_y') +
+  xlab("Year of BMI recording") +
+  ylab("Counts") +
+  scale_fill_manual(name = "BMI Categories", breaks =c('Underweight', 'Normal weight', 'Overweight', 'Obese', 'Unknown'),
+                    values =c('black', 'green', 'purple', 'red', 'gray')) +
+  theme_classic()
+
+# this creates a stacked plot of percentage per source
+perc_adults_all_source <- ggplot(counts_bmi_adults_source,
+                    aes(x = BMI_YEAR, y = perc, fill = BMI_CAT)) +
+  geom_col(alpha = 0.6, linewidth =1) +
+  facet_wrap(~SOURCE_DB) +
+  xlab("Year of BMI recording") +
+  ylab("Percentage") +
+  scale_fill_manual(name = "BMI Categories", breaks =c('Underweight', 'Normal weight', 'Overweight', 'Obese', 'Unknown'),
+                    values =c('black', 'green', 'purple', 'red', 'gray')) +
+  theme_classic()
+
+
+# use patchwork
+stacked_adults <- freq_adults_all_source / perc_adults_all_source
+
+# saving file
+ggsave(filename = 'P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/stacked_adults.png', width = 8, height = 5, device = "tiff", dpi = 300 )
+
+stacked_adults
+
+```
+
+12. Characteristics of CYP cohort grouped by years from 2000-2022.
+```{r yearly breakdown CYP, echo = FALSE, message=FALSE}
+table4 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_CYP
+where BMI_YEAR in (2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009)")
+
+table4_run <- sqlQuery(conn, table4)
+
+table4_run$SEX[table4_run$SEX == 1] <- 'Male'
+table4_run$SEX[table4_run$SEX == 2] <- 'Female'
+table4_run <- table4_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+
+## creating the gtsummary
+theme_gtsummary_compact()
+table4_CYP <- table4_run %>%
+  select(DENOM_YEAR, SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  tbl_summary(by = DENOM_YEAR,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})"),
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          PERCENTILE_BMI_CAT ~ "BMI category",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt() %>%
+  tab_header("Characteristics of CYP population")
+
+table4_CYP
+```
+
+12.1 continuation
+```{r yearly breakdown CYP cont1, echo = FALSE, message=FALSE}
+table4_1 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_CYP
+where BMI_YEAR in (2010, 2011, 2012, 2013, 2014, 2015, 2016)")
+
+table4_1_run <- sqlQuery(conn, table4_1)
+
+table4_1_run$SEX[table4_1_run$SEX == 1] <- 'Male'
+table4_1_run$SEX[table4_1_run$SEX == 2] <- 'Female'
+table4_1_run <- table4_1_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+
+## creating the gtsummary
+theme_gtsummary_compact()
+table4_1_CYP <- table4_1_run %>%
+  select(DENOM_YEAR, SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  tbl_summary(by = DENOM_YEAR,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})"),
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          PERCENTILE_BMI_CAT ~ "BMI category",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt() %>%
+  tab_header("Characteristics of CYP population continuation")
+
+table4_1_CYP
+```
+
+12.2 continuation
+```{r yearly breakdown CYP cont2, echo = FALSE, message=FALSE}
+table4_2 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_CYP
+where BMI_YEAR in (2017, 2018, 2019, 2020, 2021, 2022)")
+
+table4_2_run <- sqlQuery(conn, table4_2)
+
+table4_2_run$SEX[table4_2_run$SEX == 1] <- 'Male'
+table4_2_run$SEX[table4_2_run$SEX == 2] <- 'Female'
+table4_2_run <- table4_2_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+
+## creating the gtsummary
+theme_gtsummary_compact()
+table4_2_CYP <- table4_2_run %>%
+  select(DENOM_YEAR, SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  tbl_summary(by = DENOM_YEAR,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})"),
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          PERCENTILE_BMI_CAT ~ "BMI category",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt() %>%
+  tab_header("Characteristics of CYP population continuation")
+
+table4_2_CYP
+```
+
+13.  Breakdown of 1 year lookback period at the end of each year between
+2017 and 2022 for CYP  and adult cohort.
+
+```{r covid years, echo= FALSE, message = FALSE}
+
+covid_years = c("01-2017", "02-2017", "03-2017", "04-2017", "05-2017", "06-2017", "07-2017", "08-2017", "09-2017", "10-2017", "11-2017", "12-2017",
+                                                                             "01-2018", "02-2018", "03-2018", "04-2018", "05-2018", "06-2018", "07-2018", "08-2018", "09-2018", "10-2018", "11-2018", "12-2018",
+                                                                             "01-2019", "02-2019", "03-2019", "04-2019", "05-2019", "06-2019", "07-2019", "08-2019", "09-2019", "10-2019", "11-2019", "12-2019",
+                                                                             "01-2020", "02-2020", "03-2020", "04-2020", "05-2020", "06-2020", "07-2020", "08-2020", "09-2020", "10-2020", "11-2020", "12-2020",
+                                                                             "01-2021", "02-2021", "03-2021", "04-2021", "05-2021", "06-2021", "07-2021", "08-2021", "09-2021", "10-2021", "11-2021", "12-2021",
+                                                                             "01-2022", "02-2022", "03-2022", "04-2022", "05-2022", "06-2022", "07-2022", "08-2022", "09-2022", "10-2022", "11-2022", "12-2022")
+
+counts_all_three_CYP_1yr <- bmi_all_three_CYP %>%
+  filter(LOOKBACK == '1 Year',
+    BMI_MONTH %in% covid_years)
+
+counts_all_three_CYP_1yr_perc <- counts_all_three_CYP_1yr %>%
+  group_by(LOOKBACK, BMI_MONTH, PERCENTILE_BMI_CAT) %>%
+  summarise(n = sum(COUNTS)) %>%
+  mutate(perc = n / sum(n) * 100)
+
+preserved_CYP_1yr <- ggplot(counts_all_three_CYP_1yr_perc %>%
+                             mutate(BMI_MONTH = factor(BMI_MONTH, levels = c("01-2017", "02-2017", "03-2017", "04-2017", "05-2017", "06-2017", "07-2017", "08-2017", "09-2017", "10-2017", "11-2017", "12-2017",
+                                                                             "01-2018", "02-2018", "03-2018", "04-2018", "05-2018", "06-2018", "07-2018", "08-2018", "09-2018", "10-2018", "11-2018", "12-2018",
+                                                                             "01-2019", "02-2019", "03-2019", "04-2019", "05-2019", "06-2019", "07-2019", "08-2019", "09-2019", "10-2019", "11-2019", "12-2019",
+                                                                             "01-2020", "02-2020", "03-2020", "04-2020", "05-2020", "06-2020", "07-2020", "08-2020", "09-2020", "10-2020", "11-2020", "12-2020",
+                                                                             "01-2021", "02-2021", "03-2021", "04-2021", "05-2021", "06-2021", "07-2021", "08-2021", "09-2021", "10-2021", "11-2021", "12-2021",
+                                                                             "01-2022", "02-2022", "03-2022", "04-2022", "05-2022", "06-2022", "07-2022", "08-2022", "09-2022", "10-2022", "11-2022", "12-2022"))), 
+                           
+                           aes(x = BMI_MONTH, y = perc, fill = PERCENTILE_BMI_CAT)) +
+  geom_col(alpha = 0.6, linewidth =1) +
+  xlab("Month and Year of BMI recording") +
+  ylab("Percentage") +
+  scale_x_discrete(name = 'Month and Year', breaks=c("01-2017",
+                                                     "01-2018",
+                                                     "01-2019",
+                                                     "01-2020",
+                                                     "01-2021",
+                                                     "01-2022")) +
+  scale_fill_manual(name = "BMI Categories", breaks =c('Underweight', 'Normal weight', 'Overweight', 'Obese', 'Unknown'),
+                    values =c('black', 'green', 'purple', 'red', 'gray')) +
+  labs(title = 'A') +
+  theme_classic() +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size=10),
+        axis.title = element_text(size=10),
+        axis.title.x = element_blank())
+
+
+counts_all_three_adults <- bmi_all_three %>%
+  filter(LOOKBACK == '1 Year',
+    BMI_MONTH %in% covid_years)
+
+counts_all_three_adults_1yr <- counts_all_three_adults %>%
+  group_by(LOOKBACK, BMI_MONTH, BMI_CAT) %>%
+  summarise(n = sum(COUNTS)) %>%
+  mutate(perc = n / sum(n) * 100)
+
+preserved_adults_1yr <- ggplot(counts_all_three_adults_1yr %>%
+                            mutate(BMI_MONTH = factor(BMI_MONTH, levels = c("01-2017", "02-2017", "03-2017", "04-2017", "05-2017", "06-2017", "07-2017", "08-2017", "09-2017", "10-2017", "11-2017", "12-2017",
+                                                                            "01-2018", "02-2018", "03-2018", "04-2018", "05-2018", "06-2018", "07-2018", "08-2018", "09-2018", "10-2018", "11-2018", "12-2018",
+                                                                            "01-2019", "02-2019", "03-2019", "04-2019", "05-2019", "06-2019", "07-2019", "08-2019", "09-2019", "10-2019", "11-2019", "12-2019",
+                                                                            "01-2020", "02-2020", "03-2020", "04-2020", "05-2020", "06-2020", "07-2020", "08-2020", "09-2020", "10-2020", "11-2020", "12-2020",
+                                                                            "01-2021", "02-2021", "03-2021", "04-2021", "05-2021", "06-2021", "07-2021", "08-2021", "09-2021", "10-2021", "11-2021", "12-2021",
+                                                                            "01-2022", "02-2022", "03-2022", "04-2022", "05-2022", "06-2022", "07-2022", "08-2022", "09-2022", "10-2022", "11-2022", "12-2022"))), 
+                          
+                          aes(x = BMI_MONTH, y = perc, fill = BMI_CAT)) +
+  geom_col(alpha = 0.6, linewidth =1) +
+  xlab("Month and Year of BMI recording") +
+  ylab("Percentage") +
+  labs(title = 'B') +
+  scale_x_discrete(name = 'Month and Year', breaks=c("01-2017",
+                                                     "01-2018",
+                                                     "01-2019",
+                                                     "01-2020",
+                                                     "01-2021",
+                                                     "01-2022")) +
+  scale_fill_manual(name = "BMI Categories", breaks =c('Underweight', 'Normal weight', 'Overweight', 'Obese', 'Unknown'),
+                    values =c('black', 'green', 'purple', 'red', 'gray')) +
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=7, angle=90))
+
+
+covid_preserved <- preserved_CYP_1yr / preserved_adults_1yr
+
+#saving file
+ggsave(filename = 'P:/childsm/Project Repos/HDR25_BMI_ALG/Re-run/covid_preserved.png', width = 10, height = 7, device = "tiff", dpi = 500 )
+
+covid_preserved
+
+```
+
+```{r covid preserved counts, echo = FALSE, message = FALSE}
+covid_counts_cyp <- counts_all_three_CYP_1yr_perc %>%
+  filter(LOOKBACK == '1 Year',
+    BMI_MONTH %like% '12-',
+    PERCENTILE_BMI_CAT == 'Unknown') %>%
+  mutate(cohort = 'CYP')
+
+covid_counts_adults <- counts_all_three_adults_1yr %>%
+  filter(LOOKBACK == '1 Year',
+    BMI_MONTH %like% '12-',
+    BMI_CAT == 'Unknown') %>%
+  mutate(cohort = 'adult')
+
+covid_counts <- rbind(covid_counts_adults, covid_counts_cyp)
+
+DT::datatable(covid_counts, rownames = FALSE, extensions=c("Buttons"),options = list(dom= "Bfrtip", buttons = c("copy","csv")))
+```
+14. Characteristics of CYP living in Wales in 2022 grouped by BMI
+categories.
+```{r BMI categories CYP, echo = FALSE, message=FALSE}
+table6 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_CYP
+where bmi_year = 2022")
+
+table6_run <- sqlQuery(conn,   table6)
+
+table6_run$SEX[  table6_run$SEX == 1] <- 'Male'
+table6_run$SEX[  table6_run$SEX == 2] <- 'Female'
+table6_run <- table6_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+## creating the gtsummary
+theme_gtsummary_compact()
+
+table6_CYP <- table6_run %>%
+  select(SEX, ETHNICITY, AGE_BAND, PERCENTILE_BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  tbl_summary(by = PERCENTILE_BMI_CAT,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})"),
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt() %>%
+  tab_header("Characteristics of CYP population in 2022")
+
+table6_CYP
+```
+
+
+15. Characteristics of adult population grouped by years (from
+2000-2022).
+```{r yearly breakdown adults, echo = FALSE, message=FALSE}
+table3 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_ADULT
+where BMI_YEAR in (2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009)")
+
+table3_run <- sqlQuery(conn, table3)
+
+table3_run$SEX[table3_run$SEX == 1] <- 'Male'
+table3_run$SEX[table3_run$SEX == 2] <- 'Female'
+table3_run <- table3_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+## creating the gtsummary
+theme_gtsummary_compact()
+table3_adults <- table3_run %>%
+  select(DENOM_YEAR, SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  tbl_summary(by = DENOM_YEAR,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})"),
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          BMI_CAT ~ "BMI category",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt() %>%
+  tab_header("Characteristics of Adult population")
+
+table3_adults
+```
+
+15.1 continuation
+```{r yearly breakdown adults cont1, echo = FALSE, message=FALSE}
+table3_1 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_ADULT
+where BMI_YEAR in (2010, 2011, 2012, 2013, 2014, 2015, 2016)")
+
+table3_1_run <- sqlQuery(conn, table3_1)
+
+table3_1_run$SEX[table3_1_run$SEX == 1] <- 'Male'
+table3_1_run$SEX[table3_1_run$SEX == 2] <- 'Female'
+table3_1_run <- table3_1_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+## creating the gtsummary
+theme_gtsummary_compact()
+table3_1_adults <- table3_1_run %>%
+  select(DENOM_YEAR, SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  tbl_summary(by = DENOM_YEAR,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})"),
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          BMI_CAT ~ "BMI category",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt() %>%
+  tab_header("Characteristics of Adult population continuation")
+
+table3_1_adults
+```
+
+15.2 continuation
+```{r yearly breakdown adults cont2, echo = FALSE, message=FALSE}
+table3_2 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_ADULT
+where BMI_YEAR in (2017, 2018, 2019, 2020, 2021, 2022)")
+
+table3_2_run <- sqlQuery(conn, table3_2)
+
+table3_2_run$SEX[table3_2_run$SEX == 1] <- 'Male'
+table3_2_run$SEX[table3_2_run$SEX == 2] <- 'Female'
+table3_2_run <- table3_2_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+## creating the gtsummary
+theme_gtsummary_compact()
+table3_2_adults <- table3_2_run %>%
+  select(DENOM_YEAR, SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  tbl_summary(by = DENOM_YEAR,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})"),
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          BMI_CAT ~ "BMI category",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt() %>%
+  tab_header("Characteristics of Adult population continuation")
+
+table3_2_adults
+```
+
+16. Characteristics of adults living in Wales in 2022 grouped by BMI
+categories.
+```{r BMI categories adults, echo = FALSE, message=FALSE}
+# load tableOnes version with BMI categories
+table5 <- paste0("SELECT BMI_YEAR, SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN FROM SAILW1151V.HDR25_BMI_TABLEONE_ADULT
+where bmi_year = 2022")
+
+ table5_run <- sqlQuery(conn,  table5)
+
+ table5_run$SEX[ table5_run$SEX == 1] <- 'Male'
+ table5_run$SEX[ table5_run$SEX == 2] <- 'Female'
+ table5_run <- table5_run %>%
+              replace_na(list(ETHNICITY = 'Unknown'))
+
+## creating the gtsummary
+
+theme_gtsummary_compact()
+ 
+table5_adults <-  table5_run %>%
+  select(SEX, ETHNICITY, AGE_BAND, BMI_CAT, WIMD2019_QUINTILE, RURAL_URBAN) %>%
+  tbl_summary(by = BMI_CAT,
+             statistic = list(all_continuous() ~ "{mean}, ({sd})",
+                              all_categorical() ~ "{n} ({p}%)"),
+             label = list(SEX ~"Sex",
+                          ETHNICITY ~ "Ethnicity",
+                          AGE_BAND ~ "Age band",
+                          WIMD2019_QUINTILE ~ "Welsh Index of Multiple Deprivation 2019*",
+                          RURAL_URBAN ~ "Rural urban classification")
+                        ) %>%
+  # add n 
+  add_overall() %>%
+  bold_labels() %>%
+  as_gt() %>%
+  tab_header("Characteristics of Adult population in 2022")
+  
+
+ table5_adults
+```
+
+## Appendix
+
+Code created by: Michael Jeanne Childs, m.j.childs\@swansea.ac.uk Based
+from code by: Sarah Aldridge
+
+This folder contains rmd file for report of BMI algorithm methodology
+(which contains script used to create dataframes for results) data
+needed to create tables and figures for the report. Rows with counts \<
+10 were not included.
+
+SAIL tables used to generate the report and tables are as follows:
+
+1\. SAILWMC_V.C19_COHORT_WLGP_GP_EVENT_CLEANSED - to extract ALFs with
+BMI related events
+
+2\. SAILWMC_V.C19_COHORT_PEDW_SPELL - to extract ALFs with Obesity
+related hospital admissions
+
+3\. SAILWMC_V.C19_COHORT_PEDW_DIAG - to extract ALFs with Obesity
+related hospital admissions
+
+4\. SAILWMC_V.C19_COHORT_MIDS_INITIAL_ASSESSMENT - to extract ALFs with
+height and weight values
+
+5\. SAILWMC_V.C19_COHORT_MIDS_BIRTH - to link birth dates to
+MOTHER_ALF_PEs and calculate 9months before/after birthdate to allocate
+post/pre-natal related weight changes.
+
+6\. SAILWMC_V.C19_COHORT_NCCH_CHILD_MEASUREMENT_PROGRAM - to extract
+ALFs with BMI related events
+
+7\. SAILWMC_V.C19_COHORT_NCCH_EXAM- to extract ALFs with BMI related
+events
+
+8\. SAILWMC_V.C19_COHORT_NCCH_CHILD_BIRTHS - used to link NCCH table to
+tables from other databases.
+
+9\. sailwmc_v.C19_COHORT_WDSD_PER_RESIDENCE_GPREG - to extract week of
+birth, sex, date of death, and residency information from ALFs to
+calculate age at BMI recording and assign age bands to ALFs
+
+10\. SAILW1151V.RRDA_ETHN - to extract Ethnicity information
+
+11\. SAILWMC_V.C19_COHORT_WDSD_CLEAN_ADD_GEOG_CHAR_LSOA2011 - to extract
+WIMD2019_QUINTILE information for ALFs
+
+12\. sailw1151v.HDR25_BMI_GEOGRAPHY_LOOKUP - to extract rural/urban
+classification and local health board information
+
+13\. sailwmc_v.C19_COHORT_ADDE_DEATHS -- to extract date of death for
+individuals.
+
+| **Document name**  | **Description**                                                                                    |
+|:----------------------------------|:------------------------------------|
+| BMI_R\_Report.Rmd  | R file with details on how the BMI algorithm runs and has reports on the results of the algorithm. |
+| BMI_R\_Report.html | R markdown rendered to html for easier reading.                                                    |
+
+### Data subfolder
+
+| **Document name** | **Description**                                                                                                                                    |
+|:--------------------------------------|:--------------------------------|
+| Figures.docx      | Word document version with all the figures created from the code.                                                                                  |
+| TableOnes.docx    | Word document version of the gtsummary table created from the R code. Has the CYP and adult versions for easier transfer when writing a manuscript |
+
+### Figures subfolder
+
+| **Document name**      | **Description**                                                                                                                                                                                  |
+|:----------------------------------|:------------------------------------|
+| covid_preserved        | shows stacked plots of the proportion of BMI categories retrieved when we preserve for 1 year n 2017-2022 |
+| flowchart.png          | shows the exclusions and inclusion processes in the methodology using SAIL Databank sources |
+| flowchart_methods      | shows the generic methods flow of the methodology. |
+|flowchart_supp.jpg      | shows the methods as applied using SAIL Databank   |
+| preserved_adults.png   | Shows stacked plots of the proportion of BMI categories retrieved when we preserve BMI readings from 1 year or 5 years before study end date, or the whole of the study period for adult cohort. |
+| preserved_CYP.png      | Shows stacked plots of the proportion of BMI categories retrieved when we preserve BMI readings from 1 year or 5 years before study end date, or the whole of the study period for CYP cohort.   |
+| stacked_adults.png     | Line graph showing the trend of counts of known and unknown BMI categories from 2010-2022 in the adult cohort grouped by data source.                                                            |
+| stacked_cyp.png        | Line graph showing the trend of counts of known and unknown BMI categories from 2010-2022 in the CYP cohort grouped by data source.                                                              |
+| trend_known.png        | Line graph showing the trend of counts of known BMI categories from 2000-2022 for the CYP and adult cohort. x-axis = year, y-axis = frequency                                                    |
+| trend_overall.png      | Line graph showing the trend of counts of known BMI categories from 2000-2022 for the CYP and adult cohort. x-axis = year, y-axis = frequency                                                    |
+| trend_with_unknown.png | Line graph showing the trend of counts of known and unknown BMI categories from 2000-2022 for the CYP and adult cohort. x-axis = year, y-axis = frequency                                        |
+| upset_all_three.png    | All three upset plots patched in one file|
