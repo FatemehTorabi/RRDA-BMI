@@ -18,11 +18,11 @@
 --1. Create a cohort table in your schema containing a list of alf's and their WOBs. 
 /*
 --2. Type the name of your table into the script below under "YOUR_USER_TABLE_GOES_HERE" 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_COHORT
-FOR "SAILW1151V.YOUR_USER_TABLE_GOES_HERE" ;
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_COHORT
+FOR "SAILWNNNNV.YOUR_USER_TABLE_GOES_HERE" ;
 
 -----------------------------------------------------------------------------------------------------------------
---3. Find and replace all 1151 with your project schema number using ctrl + f
+--3. Find and replace all NNNN with your project schema number using ctrl + f
 
 -----------------------------------------------------------------------------------------------------------------
 --4. Find and replace all ALF_E with yout alf format using ctrl + f.
@@ -30,63 +30,63 @@ FOR "SAILW1151V.YOUR_USER_TABLE_GOES_HERE" ;
 
 -----------------------------------------------------------------------------------------------------------------
 --5. Create an alias for the most recent versions of the WLGP, PEDW and MIDS event tables as below:
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_GP
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_GP
 FOR SAILWMC_V.C19_COHORT_WLGP_GP_EVENT_CLEANSED_20230126 ;
 -- FOR 'YOUR_WLGP_TABLE_GOES_HERE'
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_PEDW_SPELL
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_PEDW_SPELL
 FOR SAILWMC_V.C19_COHORT_PEDW_SPELL_20230126;
 -- FOR 'YOUR_PEDW_SPELL_TABLE_GOES_HERE'
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_PEDW_DIAG
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_PEDW_DIAG
 FOR SAILWMC_V.C19_COHORT_PEDW_DIAG_20230126 ;
 -- FOR 'YOUR_PEDW_DIAG_TABLE_GOES_HERE'
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_MIDS
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_MIDS
 FOR SAILWMC_V.C19_COHORT_MIDS_INITIAL_ASSESSMENT_20230126 ;
 -- FOR 'YOUR_MIDS_TABLE_GOES_HERE'
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_MIDS_BIRTH
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_MIDS_BIRTH
 FOR SAILWMC_V.C19_COHORT_MIDS_BIRTH_20230126 ;
 -- FOR 'YOUR_MIDS_BIRTH_TABLE_GOES_HERE'
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_NCCH_EXAM
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_NCCH_EXAM
 FOR SAILWMC_V.C19_COHORT_NCCH_EXAM_20221027 ;
 -- FOR 'YOUR_NCCH_EXAM_TABLE_GOES_HERE'
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_NCCH_CHILD_MEASURE
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_NCCH_CHILD_MEASURE
 FOR SAILWMC_V.C19_COHORT_NCCH_CHILD_MEASUREMENT_PROGRAM_20221027 ;
 -- FOR 'YOUR_NCCH_CHILD_MEASURE_TABLE_GOES_HERE'
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_NCCH_CHILD_BIRTH
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_NCCH_CHILD_BIRTH
 FOR SAILWMC_V.C19_COHORT_NCCH_CHILD_BIRTHS_20221027 ;
 -- FOR 'YOUR_NCCH_CHILD_BIRTH_TABLE_GOES_HERE'
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_WDSD
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_WDSD
 FOR sailwmc_v.C19_COHORT_WDSD_PER_RESIDENCE_GPREG ; -- single view WDSD table
 -- FOR 'YOUR_WDSD_TABLE_GOES_HERE'
 
 -----------------------------------------------------------------------------------------------------------------
 --6. Create variables for the earliest and latest dates you want the BMI values for (replace dates as necessary)
-CREATE OR REPLACE VARIABLE SAILW1151V.HDR25_BMI_DATE_FROM  DATE;
-SET SAILW1151V.HDR25_BMI_DATE_FROM = '2010-01-01' ; -- 'YYYY-MM-DD'
+CREATE OR REPLACE VARIABLE SAILWNNNNV.BMI_DATE_FROM  DATE;
+SET SAILWNNNNV.BMI_DATE_FROM = '2010-01-01' ; -- 'YYYY-MM-DD'
 
-CREATE OR REPLACE VARIABLE SAILW1151V.HDR25_BMI_DATE_TO  DATE;
-SET SAILW1151V.HDR25_BMI_DATE_TO = '2022-12-31' ; -- 'YYYY-MM-DD'
+CREATE OR REPLACE VARIABLE SAILWNNNNV.BMI_DATE_TO  DATE;
+SET SAILWNNNNV.BMI_DATE_TO = '2022-12-31' ; -- 'YYYY-MM-DD'
 
 --7. Optional -- Assign your acceptable ranges for BMI at:
 -- same day variation - default = 0.05
-CREATE OR REPLACE VARIABLE SAILW1151V.HDR25_BMI_SAME_DAY DOUBLE DEFAULT 0.05;
+CREATE OR REPLACE VARIABLE SAILWNNNNV.BMI_SAME_DAY DOUBLE DEFAULT 0.05;
 
 -- rate of change - default = 0.003
-CREATE OR REPLACE VARIABLE SAILW1151V.HDR25_BMI_RATE DOUBLE DEFAULT 0.003; 
+CREATE OR REPLACE VARIABLE SAILWNNNNV.BMI_RATE DOUBLE DEFAULT 0.003; 
 
 -----------------------------------------------------------------------------------------------------------------
 --8. Optional --- Create lookup table -- feel free to review the codes listed below and make any changes
 
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_LOOKUP');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_LOOKUP');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_LOOKUP
+CREATE TABLE SAILWNNNNV.BMI_LOOKUP
 (
         BMI_code        CHAR(5),
         description		VARCHAR(300),
@@ -95,13 +95,13 @@ CREATE TABLE SAILW1151V.HDR25_BMI_LOOKUP
 );
 
 --granting access to team mates
-GRANT ALL ON TABLE SAILW1151V.HDR25_BMI_LOOKUP TO ROLE NRDASAIL_SAIL_1151_ANALYST;
+GRANT ALL ON TABLE SAILWNNNNV.BMI_LOOKUP TO ROLE NRDASAIL_SAIL_NNNN_ANALYST;
 
 --worth doing for large chunks of data
-alter table SAILW1151V.HDR25_BMI_LOOKUP activate not logged INITIALLY;
+alter table SAILWNNNNV.BMI_LOOKUP activate not logged INITIALLY;
 
 -- This lookup table contains the GP look up codes relevent to height, weight and BMI, they are categorised as such.
-insert into SAILW1151V.HDR25_BMI_LOOKUP
+insert into SAILWNNNNV.BMI_LOOKUP
 VALUES
 ('2293.', 'O/E -height within 10% average', 'where event_val between x and y (depending on unit)', 'height'),
 ('229..', 'O/E - height', 'where event_val between x and y (depending on unit)', 'height'),
@@ -189,9 +189,9 @@ VALUES
 -----------------------------------------------------------------------------------------------------------------
 -- create the centiles table for allocation of BMI categories for CYP as per WHO guidelines.
 -----------------------------------------------------------------------------------------------------------------
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_CENTILES');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_CENTILES');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_CENTILES
+CREATE TABLE SAILWNNNNV.BMI_CENTILES
 (
         sex				CHAR(1),
         age_months		INTEGER,
@@ -222,13 +222,13 @@ CREATE TABLE SAILW1151V.HDR25_BMI_CENTILES
 );
 
 --granting access to team mates
-GRANT ALL ON TABLE SAILW1151V.HDR25_BMI_CENTILES TO ROLE NRDASAIL_SAIL_1151_ANALYST;
+GRANT ALL ON TABLE SAILWNNNNV.BMI_CENTILES TO ROLE NRDASAIL_SAIL_NNNN_ANALYST;
 
 --worth doing for large chunks of data
-alter table SAILW1151V.HDR25_BMI_CENTILES activate not logged INITIALLY;
+alter table SAILWNNNNV.BMI_CENTILES activate not logged INITIALLY;
 
 -- This lookup table contains the GP look up codes relevent to height, weight and BMI, they are categorised as such.
-insert into SAILW1151V.HDR25_BMI_CENTILES
+insert into SAILWNNNNV.BMI_CENTILES
 VALUES
 ('2',	'0',	'10',	'10.8',	'11.2',	'11.5',	'11.8',	'12.1',	'12.5',	'13.3',	'14.2',	'14.7',	'15',	'15.5',	'15.9',	'16.6',	'17.8',	NULL,	'10.1',	'11.1',	'12.2',	'13.3',	'14.6',	'16.1',	'17.7',	NULL),
 ('2',	'1',	'10.7',	'11.6',	'12.1',	'12.4',	'12.9',	'13.2',	'13.6',	'14.6',	'15.5',	'16.1',	'16.4',	'17',	'17.3',	'18',	'19.3',	NULL,	'10.8',	'12',	'13.2',	'14.6',	'16',	'17.5',	'19.1',	NULL),
@@ -695,8 +695,8 @@ VALUES
 -----------------------------------------------------------------------------------------------------------------
 -- 9. Drop final BMI table if it exists using the code below
 -----------------------------------------------------------------------------------------------------------------
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_UNCLEAN_ADULTS');
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_CLEAN_ADULTS');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_UNCLEAN_ADULTS');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_CLEAN_ADULTS');
 
 ------------------------------------------------------------------------------------------------------------------
 ------------------------------- ALGORITHM RUNS FROM HERE ---------------------------------------------------------
@@ -706,9 +706,9 @@ CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_CLEAN_ADULTS');
 -- these will then be put together using UNION ALL to make the BMI_CAT table.
 ------------------------------------------------------------------------------------------------------------------
 --1a. table for normal underweight
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_UNDERWEIGHT');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.UNDERWEIGHT');
 
-CREATE TABLE SAILW1151V.HDR25_UNDERWEIGHT
+CREATE TABLE SAILWNNNNV.UNDERWEIGHT
 (
 		ALF_E        	BIGINT,
 		BMI_dt     		DATE,
@@ -720,7 +720,7 @@ CREATE TABLE SAILW1151V.HDR25_UNDERWEIGHT
 DISTRIBUTE BY HASH(ALF_E);
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_UNDERWEIGHT
+INSERT INTO SAILWNNNNV.UNDERWEIGHT
 SELECT -- extracting those categorised as underweight
 	DISTINCT (ALF_E), 
 	event_dt AS BMI_dt, 
@@ -733,12 +733,12 @@ SELECT -- extracting those categorised as underweight
 		END AS BMI_val,
 	'WLGP' AS source_db
 FROM 
-	SAILW1151V.HDR25_BMI_ALG_GP a
+	SAILWNNNNV.BMI_ALG_GP a
 INNER JOIN 
-	SAILW1151V.HDR25_BMI_lookup b
+	SAILWNNNNV.BMI_lookup b
 ON a.event_cd = b.BMI_code AND b.category = 'underweight'
 WHERE 
-	a.event_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO
+	a.event_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO
 AND	alf_sts_cd IN ('1', '4', '39')
 ;
 
@@ -746,9 +746,9 @@ COMMIT;
 
 
 --1b. table for normal weight
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_NORMALWEIGHT');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.NORMALWEIGHT');
 
-CREATE TABLE SAILW1151V.HDR25_NORMALWEIGHT
+CREATE TABLE SAILWNNNNV.NORMALWEIGHT
 (
 		ALF_E        	BIGINT,
 		BMI_dt     		DATE,
@@ -760,7 +760,7 @@ CREATE TABLE SAILW1151V.HDR25_NORMALWEIGHT
 DISTRIBUTE BY HASH(ALF_E);
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_NORMALWEIGHT
+INSERT INTO SAILWNNNNV.NORMALWEIGHT
 SELECT
 	DISTINCT (ALF_E), 
 	event_dt AS BMI_dt, 
@@ -773,20 +773,20 @@ SELECT
 		END AS BMI_val,
 	'WLGP' AS source_db
 FROM 
-	SAILW1151V.HDR25_BMI_ALG_GP a
+	SAILWNNNNV.BMI_ALG_GP a
 RIGHT JOIN 
-	SAILW1151V.HDR25_BMI_lookup b
+	SAILWNNNNV.BMI_lookup b
 ON a.event_cd = b.BMI_code AND b.category = 'normal weight'
 WHERE 
-	a.event_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO
+	a.event_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO
 	AND	alf_sts_cd IN ('1', '4', '39')
 ;
 
 
 --1c. creating table for overweight
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_OVERWEIGHT');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.OVERWEIGHT');
 
-CREATE TABLE SAILW1151V.HDR25_OVERWEIGHT
+CREATE TABLE SAILWNNNNV.OVERWEIGHT
 (
 		ALF_E        	BIGINT,
 		BMI_dt     		DATE,
@@ -798,7 +798,7 @@ CREATE TABLE SAILW1151V.HDR25_OVERWEIGHT
 DISTRIBUTE BY HASH(ALF_E);
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_OVERWEIGHT
+INSERT INTO SAILWNNNNV.OVERWEIGHT
 SELECT 
 	DISTINCT (ALF_E), 
 	event_dt AS BMI_dt, 
@@ -811,21 +811,21 @@ SELECT
 		END AS BMI_val,
 	'WLGP' AS source_db
 FROM 
-	SAILW1151V.HDR25_BMI_ALG_GP a
+	SAILWNNNNV.BMI_ALG_GP a
 RIGHT JOIN 
-	SAILW1151V.HDR25_BMI_lookup b
+	SAILWNNNNV.BMI_lookup b
 ON a.event_cd = b.BMI_code AND b.category = 'overweight'
 WHERE 
-	a.event_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO
+	a.event_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO
 AND	alf_sts_cd IN ('1', '4', '39')
 ;
 
 COMMIT;
 
 --1d. creating table for obese
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_OBESE');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.OBESE');
 
-CREATE TABLE SAILW1151V.HDR25_OBESE
+CREATE TABLE SAILWNNNNV.OBESE
 (
 		ALF_E        	BIGINT,
 		BMI_dt     		DATE,
@@ -837,9 +837,9 @@ CREATE TABLE SAILW1151V.HDR25_OBESE
 DISTRIBUTE BY HASH(ALF_E);
 COMMIT;
 
-ALTER TABLE SAILW1151V.HDR25_OBESE activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.OBESE activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_OBESE
+INSERT INTO SAILWNNNNV.OBESE
 SELECT 
 	DISTINCT (ALF_E), 
 	event_dt AS BMI_dt, 
@@ -851,12 +851,12 @@ SELECT
 		ELSE 9999
 		END AS BMI_val,
 	'WLGP' AS source_db
-FROM SAILW1151V.HDR25_BMI_ALG_GP a
+FROM SAILWNNNNV.BMI_ALG_GP a
 RIGHT JOIN 
-	SAILW1151V.HDR25_BMI_lookup b
+	SAILWNNNNV.BMI_lookup b
 ON a.event_cd = b.BMI_code AND b.category = 'obese'
 WHERE 
-	a.event_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO
+	a.event_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO
 AND	alf_sts_cd IN ('1', '4', '39')
 ;
 
@@ -866,40 +866,40 @@ SELECT
     'Underweight' as description,
     count(distinct ALF_E) as alf, 
     count(*) as counts 
-FROM SAILW1151V.HDR25_UNDERWEIGHT
+FROM SAILWNNNNV.UNDERWEIGHT
 UNION 
 SELECT    
     '2' as  row_no,
     'Normal weight' as description,
     count(distinct ALF_E) as alf, 
     count(*) as counts 
-FROM SAILW1151V.HDR25_NORMALWEIGHT
+FROM SAILWNNNNV.NORMALWEIGHT
 UNION
 SELECT 
     '3' as  row_no,
     'Overweight' as description,
     count(distinct ALF_E) as alf, 
     count(*) as counts  
-FROM SAILW1151V.HDR25_OVERWEIGHT
+FROM SAILWNNNNV.OVERWEIGHT
 UNION
 SELECT
     '4' as  row_no,
     'Obese' as description,
     count(distinct ALF_E) as alf, 
     count(*) as counts 
-FROM SAILW1151V.HDR25_OBESE
+FROM SAILWNNNNV.OBESE
 order by row_no; 
 
---DROP TABLE SAILW1151V.underweight;
---DROP TABLE SAILW1151V.normalweight;
---DROP TABLE SAILW1151V.overweight;
---DROP TABLE SAILW1151V.obese;
+--DROP TABLE SAILWNNNNV.underweight;
+--DROP TABLE SAILWNNNNV.normalweight;
+--DROP TABLE SAILWNNNNV.overweight;
+--DROP TABLE SAILWNNNNV.obese;
 
 
 --1e. Pulling ALL entries from WLGP that have BMI category allocated between the time-frame specified.
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_CAT');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_CAT');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_CAT
+CREATE TABLE SAILWNNNNV.BMI_CAT
 (
 		ALF_E        	BIGINT,
 		BMI_dt     		DATE,
@@ -911,29 +911,29 @@ CREATE TABLE SAILW1151V.HDR25_BMI_CAT
 DISTRIBUTE BY HASH(ALF_E);
 COMMIT;
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_CAT with distribution and detailed indexes all');  
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_CAT with distribution and detailed indexes all');  
 COMMIT;	
 
-ALTER TABLE SAILW1151V.HDR25_BMI_CAT activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_CAT activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_CAT
+INSERT INTO SAILWNNNNV.BMI_CAT
 SELECT DISTINCT -- now we join all these tables together
 	*
 FROM 
-	SAILW1151V.HDR25_UNDERWEIGHT
+	SAILWNNNNV.UNDERWEIGHT
 UNION ALL
 SELECT DISTINCT
 	*
 FROM 
-	SAILW1151V.HDR25_NORMALWEIGHT
+	SAILWNNNNV.NORMALWEIGHT
 UNION ALL
 SELECT DISTINCT
 	*
-FROM SAILW1151V.HDR25_OVERWEIGHT
+FROM SAILWNNNNV.OVERWEIGHT
 UNION ALL
 SELECT DISTINCT
 	*
-FROM SAILW1151V.HDR25_OBESE
+FROM SAILWNNNNV.OBESE
 
 COMMIT;
 
@@ -943,9 +943,9 @@ COMMIT;
 -----------------------------------------------------------------------------------------------------------------
 -- Here we extract ALL entries with BMI values from the time-frame specified.
 
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_VAL');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_VAL');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_VAL
+CREATE TABLE SAILWNNNNV.BMI_VAL
 (
 		ALF_E        	BIGINT,
 		BMI_dt     		DATE,
@@ -957,11 +957,11 @@ CREATE TABLE SAILW1151V.HDR25_BMI_VAL
 DISTRIBUTE BY HASH(ALF_E);
 COMMIT;
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_VAL with distribution and detailed indexes all');  
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_VAL with distribution and detailed indexes all');  
 COMMIT;	
 
 
-INSERT INTO SAILW1151V.HDR25_BMI_VAL
+INSERT INTO SAILWNNNNV.BMI_VAL
 SELECT DISTINCT 
     ALF_E, 
 	BMI_dt,
@@ -988,15 +988,15 @@ FROM
 		event_dt    AS BMI_dt, 
 		event_val   AS BMI_val
 	FROM 
-		SAILW1151V.HDR25_BMI_ALG_GP a -- all of the WLGP data which has event_cd
+		SAILWNNNNV.BMI_ALG_GP a -- all of the WLGP data which has event_cd
 	RIGHT JOIN 
-		SAILW1151V.HDR25_BMI_LOOKUP b -- that matches up the BMI_code in this table
+		SAILWNNNNV.BMI_LOOKUP b -- that matches up the BMI_code in this table
 	ON a.event_cd = b.BMI_code
 	WHERE 
 		category = 'BMI' -- all entries relating to 'BMI' which have:
 	AND alf_sts_cd 	IN ('1', '4', '39') -- all the acceptable sts_cd
 	AND event_val 	BETWEEN 12 AND 100 -- all the acceptable BMI values
-	AND event_dt	BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO -- we want to capture the study date.
+	AND event_dt	BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO -- we want to capture the study date.
 	)
 ; 
 
@@ -1010,9 +1010,9 @@ COMMIT;
 	-- We want to limit the extraction to our start and end dates.
 
 --3.1.a. Extracting height from WLGP
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_HEIGHT_WLGP');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_HEIGHT_WLGP');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_HEIGHT_WLGP
+CREATE TABLE SAILWNNNNV.BMI_HEIGHT_WLGP
 (
 		ALF_E        	BIGINT,
 		height_dt      	DATE,
@@ -1021,31 +1021,31 @@ CREATE TABLE SAILW1151V.HDR25_BMI_HEIGHT_WLGP
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_HEIGHT_WLGP with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_HEIGHT_WLGP with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_HEIGHT_WLGP activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_HEIGHT_WLGP activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_HEIGHT_WLGP
+INSERT INTO SAILWNNNNV.BMI_HEIGHT_WLGP
 SELECT DISTINCT 
 	ALF_E,  
 	event_dt AS height_dt, 
 	event_val AS height,
 	'WLGP' AS source_db
 FROM 
-	SAILW1151V.HDR25_BMI_ALG_GP a
+	SAILWNNNNV.BMI_ALG_GP a
 RIGHT JOIN
-	SAILW1151V.HDR25_BMI_LOOKUP b
+	SAILWNNNNV.BMI_LOOKUP b
 ON a.event_cd = b.BMI_code AND b.category = 'height'
 WHERE 
-	(event_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO)
+	(event_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO)
 	AND alf_sts_cd IN ('1', '4', '39')
 	AND event_val IS NOT NULL
 
 --3.1.b. Extracting weight from WLGP.	
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_WEIGHT_WLGP');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_WEIGHT_WLGP');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_WEIGHT_WLGP
+CREATE TABLE SAILWNNNNV.BMI_WEIGHT_WLGP
 (
 		ALF_E        	BIGINT,
 		bmi_dt      	DATE,
@@ -1054,24 +1054,24 @@ CREATE TABLE SAILW1151V.HDR25_BMI_WEIGHT_WLGP
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_WEIGHT_WLGP with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_WEIGHT_WLGP with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_WEIGHT_WLGP activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_WEIGHT_WLGP activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_WEIGHT_WLGP
+INSERT INTO SAILWNNNNV.BMI_WEIGHT_WLGP
 SELECT DISTINCT 
 	ALF_E,   
 	event_dt	AS bmi_dt,
 	event_val 	AS weight,
 	'WLGP' 		AS source_db
 FROM 
-	SAILW1151V.HDR25_BMI_ALG_GP a
+	SAILWNNNNV.BMI_ALG_GP a
 RIGHT JOIN
-	SAILW1151V.HDR25_BMI_LOOKUP b
+	SAILWNNNNV.BMI_LOOKUP b
 ON a.event_cd = b.BMI_code AND b.category = 'weight'
 WHERE 
-	(event_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO)
+	(event_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO)
 	AND alf_sts_cd IN ('1', '4', '39')
 	AND event_val IS NOT NULL
 ;
@@ -1080,9 +1080,9 @@ COMMIT;
 
 	
 --3.2.a. getting height and weight from MIDS
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_HEIGHT_MIDS');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_HEIGHT_MIDS');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_HEIGHT_MIDS
+CREATE TABLE SAILWNNNNV.BMI_HEIGHT_MIDS
 (
 		ALF_E        	BIGINT,
 		height_dt      	DATE,
@@ -1091,29 +1091,29 @@ CREATE TABLE SAILW1151V.HDR25_BMI_HEIGHT_MIDS
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_HEIGHT_MIDS with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_HEIGHT_MIDS with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_HEIGHT_MIDS activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_HEIGHT_MIDS activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_HEIGHT_MIDS
+INSERT INTO SAILWNNNNV.BMI_HEIGHT_MIDS
 SELECT DISTINCT 
 	mother_ALF_E		AS ALF_E,
 	initial_ass_dt 		AS height_dt, 
 	service_user_height AS height,
 	'MIDS'				AS source_db
 FROM
-	SAILW1151V.HDR25_BMI_ALG_MIDS
+	SAILWNNNNV.BMI_ALG_MIDS
 WHERE 
-	(INITIAL_ASS_DT BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO)
+	(INITIAL_ASS_DT BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO)
 	AND mother_alf_sts_cd IN ('1', '4', '39')
 	AND service_user_height IS NOT NULL;
  
 
 --3.2.b. weight from MIDS
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_WEIGHT_MIDS');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_WEIGHT_MIDS');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_WEIGHT_MIDS
+CREATE TABLE SAILWNNNNV.BMI_WEIGHT_MIDS
 (
 		ALF_E        	BIGINT,
 		bmi_dt      	DATE,
@@ -1122,21 +1122,21 @@ CREATE TABLE SAILW1151V.HDR25_BMI_WEIGHT_MIDS
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_WEIGHT_MIDS with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_WEIGHT_MIDS with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_WEIGHT_MIDS activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_WEIGHT_MIDS activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_WEIGHT_MIDS
+INSERT INTO SAILWNNNNV.BMI_WEIGHT_MIDS
 SELECT DISTINCT 
 	mother_ALF_E			AS ALF_E,
 	initial_ass_dt 			AS bmi_dt, 
 	service_user_weight_kg 	AS weight,
 	'MIDS'					AS source_db
 FROM
-	SAILW1151V.HDR25_BMI_ALG_MIDS 
+	SAILWNNNNV.BMI_ALG_MIDS 
 WHERE 
-	(INITIAL_ASS_DT BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO)
+	(INITIAL_ASS_DT BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO)
 	AND mother_alf_sts_cd IN ('1', '4', '39')
 	AND service_user_weight_kg IS NOT NULL;
 
@@ -1144,9 +1144,9 @@ COMMIT;
 
 
 --3.3.a. Extracting height from NCCH tables
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_HEIGHT_NCCH');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_HEIGHT_NCCH');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_HEIGHT_NCCH
+CREATE TABLE SAILWNNNNV.BMI_HEIGHT_NCCH
 (
 		ALF_E        	BIGINT,
 		height_dt      	DATE,
@@ -1155,12 +1155,12 @@ CREATE TABLE SAILW1151V.HDR25_BMI_HEIGHT_NCCH
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_HEIGHT_NCCH with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_HEIGHT_NCCH with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_HEIGHT_NCCH activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_HEIGHT_NCCH activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_HEIGHT_NCCH
+INSERT INTO SAILWNNNNV.BMI_HEIGHT_NCCH
 SELECT DISTINCT 
 	a.ALF_E,
 	exam_dt 	AS height_dt,
@@ -1173,9 +1173,9 @@ FROM
 		exam_dt,
 		height
 	FROM
-		SAILW1151V.HDR25_BMI_ALG_NCCH_CHILD_MEASURE
+		SAILWNNNNV.BMI_ALG_NCCH_CHILD_MEASURE
 	WHERE 
-		(exam_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO)
+		(exam_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO)
 	AND height IS NOT NULL
 	UNION
 	SELECT
@@ -1183,13 +1183,13 @@ FROM
 		exam_dt,
 		height_cm AS height
 	FROM
-		SAILW1151V.HDR25_BMI_ALG_NCCH_EXAM  
+		SAILWNNNNV.BMI_ALG_NCCH_EXAM  
 	WHERE 
-		(exam_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO)
+		(exam_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO)
 	AND height_cm IS NOT NULL
 	)
 LEFT JOIN
-	SAILW1151V.HDR25_BMI_ALG_NCCH_CHILD_BIRTH a -- no height here, we're using this to get the ALF_E link.
+	SAILWNNNNV.BMI_ALG_NCCH_CHILD_BIRTH a -- no height here, we're using this to get the ALF_E link.
 USING (child_id_e)
 WHERE 
 	alf_sts_cd IN ('1', '4', '39')
@@ -1198,9 +1198,9 @@ AND height IS NOT NULL
  
 
 --3.3.b. Extracting weight from NCCH tables
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_WEIGHT_NCCH');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_WEIGHT_NCCH');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_WEIGHT_NCCH
+CREATE TABLE SAILWNNNNV.BMI_WEIGHT_NCCH
 (
 		ALF_E        	BIGINT,
 		bmi_dt      	DATE,
@@ -1209,12 +1209,12 @@ CREATE TABLE SAILW1151V.HDR25_BMI_WEIGHT_NCCH
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_WEIGHT_NCCH with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_WEIGHT_NCCH with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_WEIGHT_NCCH activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_WEIGHT_NCCH activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_WEIGHT_NCCH
+INSERT INTO SAILWNNNNV.BMI_WEIGHT_NCCH
 SELECT DISTINCT 
 	a.ALF_E,
 	exam_dt 	AS bmi_dt,
@@ -1227,9 +1227,9 @@ FROM
 		exam_dt,
 		weight
 	FROM
-		SAILW1151V.HDR25_BMI_ALG_NCCH_CHILD_MEASURE 
+		SAILWNNNNV.BMI_ALG_NCCH_CHILD_MEASURE 
 	WHERE 
-		(exam_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO)
+		(exam_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO)
 	AND weight IS NOT NULL
 	
 	UNION
@@ -1238,13 +1238,13 @@ FROM
 		exam_dt,
 		weight_kg AS weight
 	FROM
-		SAILW1151V.HDR25_BMI_ALG_NCCH_EXAM 
+		SAILWNNNNV.BMI_ALG_NCCH_EXAM 
 	WHERE 
-		(exam_dt BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO)
+		(exam_dt BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO)
 	AND weight_kg IS NOT NULL
 	) b
 LEFT JOIN
-	SAILW1151V.HDR25_BMI_ALG_NCCH_CHILD_BIRTH a  -- no weight here, we're using this to get the ALF_E link.
+	SAILWNNNNV.BMI_ALG_NCCH_CHILD_BIRTH a  -- no weight here, we're using this to get the ALF_E link.
 USING (child_id_e)
 WHERE 
 	alf_sts_cd IN ('1', '4', '39')
@@ -1252,9 +1252,9 @@ AND weight IS NOT NULL;
 
 
 --3.4.a. Union all  height tables
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_HEIGHT');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_HEIGHT');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_HEIGHT
+CREATE TABLE SAILWNNNNV.BMI_HEIGHT
 (
 		ALF_E        	BIGINT,
 		height_dt      	DATE,
@@ -1263,33 +1263,33 @@ CREATE TABLE SAILW1151V.HDR25_BMI_HEIGHT
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_HEIGHT with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_HEIGHT with distribution and detailed indexes all');
 COMMIT; 
 
-INSERT INTO SAILW1151V.HDR25_BMI_HEIGHT -- creating a long table with all the height values from WLGP, MIDS and NCCH.
+INSERT INTO SAILWNNNNV.BMI_HEIGHT -- creating a long table with all the height values from WLGP, MIDS and NCCH.
 SELECT DISTINCT
 	*
 FROM 
-	SAILW1151V.HDR25_BMI_HEIGHT_WLGP;
+	SAILWNNNNV.BMI_HEIGHT_WLGP;
 
-INSERT INTO SAILW1151V.HDR25_BMI_HEIGHT
+INSERT INTO SAILWNNNNV.BMI_HEIGHT
 SELECT DISTINCT
 	*
 FROM
-	SAILW1151V.HDR25_BMI_HEIGHT_MIDS;
+	SAILWNNNNV.BMI_HEIGHT_MIDS;
 	
-INSERT INTO SAILW1151V.HDR25_BMI_HEIGHT
+INSERT INTO SAILWNNNNV.BMI_HEIGHT
 SELECT DISTINCT
 	*
 FROM
-	SAILW1151V.HDR25_BMI_HEIGHT_NCCH;
+	SAILWNNNNV.BMI_HEIGHT_NCCH;
 
 COMMIT;
 
 --3.4.b. Union all weight tables
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_WEIGHT');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_WEIGHT');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_WEIGHT
+CREATE TABLE SAILWNNNNV.BMI_WEIGHT
 (
 		ALF_E        	BIGINT,
 		bmi_dt      	DATE,
@@ -1298,37 +1298,37 @@ CREATE TABLE SAILW1151V.HDR25_BMI_WEIGHT
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_WEIGHT with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_WEIGHT with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_WEIGHT activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_WEIGHT activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_WEIGHT --creating a long table with all the weight values from WLGP, MIDS and NCCH.
+INSERT INTO SAILWNNNNV.BMI_WEIGHT --creating a long table with all the weight values from WLGP, MIDS and NCCH.
 SELECT DISTINCT
 	*
 FROM 
-	SAILW1151V.HDR25_BMI_WEIGHT_WLGP;
+	SAILWNNNNV.BMI_WEIGHT_WLGP;
 
-INSERT INTO SAILW1151V.HDR25_BMI_WEIGHT
+INSERT INTO SAILWNNNNV.BMI_WEIGHT
 SELECT DISTINCT
 	*
 FROM
-	SAILW1151V.HDR25_BMI_WEIGHT_MIDS;
+	SAILWNNNNV.BMI_WEIGHT_MIDS;
 
-INSERT INTO SAILW1151V.HDR25_BMI_WEIGHT
+INSERT INTO SAILWNNNNV.BMI_WEIGHT
 SELECT DISTINCT
 	*
 FROM
-	SAILW1151V.HDR25_BMI_WEIGHT_NCCH;
+	SAILWNNNNV.BMI_WEIGHT_NCCH;
 
 COMMIT;
 
 -----------------------------------------------------------------------------------------------------------------
 ---4. extracting ALF_Es WITH code FROM PEDW
 -----------------------------------------------------------------------------------------------------------------
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_PEDW');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_PEDW');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_PEDW
+CREATE TABLE SAILWNNNNV.BMI_PEDW
 (
 		ALF_E        	BIGINT,
 		BMI_dt     		DATE,
@@ -1338,23 +1338,23 @@ CREATE TABLE SAILW1151V.HDR25_BMI_PEDW
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_PEDW with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_PEDW with distribution and detailed indexes all');
 COMMIT; 
 
-INSERT INTO SAILW1151V.HDR25_BMI_PEDW 
+INSERT INTO SAILWNNNNV.BMI_PEDW 
 SELECT distinct ALF_E, 
 	ADMIS_DT 	AS BMI_dt, 
 	'Obese' 	AS BMI_cat,
 	'4' 		AS BMI_c,
 	'PEDW' 		AS source_db
 FROM 
-	SAILW1151V.HDR25_BMI_ALG_PEDW_SPELL a 
+	SAILWNNNNV.BMI_ALG_PEDW_SPELL a 
 INNER JOIN 
-	SAILW1151V.HDR25_BMI_ALG_PEDW_DIAG b 
+	SAILWNNNNV.BMI_ALG_PEDW_DIAG b 
 USING 
 	(SPELL_NUM_E)
 WHERE 
-	(ADMIS_DT  BETWEEN SAILW1151V.HDR25_BMI_DATE_FROM AND SAILW1151V.HDR25_BMI_DATE_TO)
+	(ADMIS_DT  BETWEEN SAILWNNNNV.BMI_DATE_FROM AND SAILWNNNNV.BMI_DATE_TO)
 	AND DIAG_CD LIKE 'E66%' -- ICD-10 codes that match this have obesity diagnoses.
 	AND alf_sts_cd IN ('1', '4', '39') ;
 
@@ -1364,9 +1364,9 @@ COMMIT;
 ------------ Putting all BMI data in one table.
 --------------------------------------------------------------
 -- Here we put all the BMI data in one table. We allocate a hierarchical rank based on source type.
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_COMBO_STAGE_1');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_COMBO_STAGE_1');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_STAGE_1
+CREATE TABLE SAILWNNNNV.BMI_COMBO_STAGE_1
 (
 		ALF_E        	BIGINT,
 		BMI_dt     		DATE,
@@ -1381,12 +1381,12 @@ CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_STAGE_1
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_COMBO_STAGE_1 with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_COMBO_STAGE_1 with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_COMBO_STAGE_1 activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_COMBO_STAGE_1 activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_COMBO_STAGE_1
+INSERT INTO SAILWNNNNV.BMI_COMBO_STAGE_1
 SELECT  DISTINCT -- removes duplicates
 	*
 FROM 
@@ -1403,7 +1403,7 @@ FROM
 			'5' 			AS source_rank,
 			source_db
 		FROM 
-			SAILW1151V.HDR25_BMI_CAT 
+			SAILWNNNNV.BMI_CAT 
 		UNION ALL
 		SELECT 
 			ALF_E, 
@@ -1417,7 +1417,7 @@ FROM
 			'1' 			AS source_rank,
 			source_db 
 		FROM 
-			SAILW1151V.HDR25_BMI_VAL
+			SAILWNNNNV.BMI_VAL
 		UNION ALL
 		SELECT 
 			ALF_E, 
@@ -1430,7 +1430,7 @@ FROM
 			'height' 	AS source_type, 
 			'2' 		AS source_rank,
 			source_db
-		FROM SAILW1151V.HDR25_BMI_HEIGHT
+		FROM SAILWNNNNV.BMI_HEIGHT
 		WHERE 
 			source_db = 'WLGP'
 		UNION ALL
@@ -1445,7 +1445,7 @@ FROM
 			'height' 	AS source_type, 
 			'3' 		AS source_rank,
 			source_db
-		FROM SAILW1151V.HDR25_BMI_HEIGHT
+		FROM SAILWNNNNV.BMI_HEIGHT
 		WHERE 
 			source_db = 'MIDS'
 		UNION ALL
@@ -1460,7 +1460,7 @@ FROM
 			'height' 	AS source_type, 
 			'4' 		AS source_rank,
 			source_db
-		FROM SAILW1151V.HDR25_BMI_HEIGHT
+		FROM SAILWNNNNV.BMI_HEIGHT
 		WHERE 
 			source_db = 'NCCH'
 		UNION ALL
@@ -1475,7 +1475,7 @@ FROM
 			'weight' 	AS source_type, 
 			'2' 		AS source_rank,
 			source_db
-		FROM SAILW1151V.HDR25_BMI_WEIGHT
+		FROM SAILWNNNNV.BMI_WEIGHT
 		WHERE 
 			source_db = 'WLGP'
 		UNION ALL
@@ -1490,7 +1490,7 @@ FROM
 			'weight' 	AS source_type, 
 			'3' 		AS source_rank,
 			source_db
-		FROM SAILW1151V.HDR25_BMI_WEIGHT
+		FROM SAILWNNNNV.BMI_WEIGHT
 		WHERE 
 			source_db = 'MIDS'
 		UNION ALL
@@ -1505,7 +1505,7 @@ FROM
 			'weight' 	AS source_type, 
 			'4' 		AS source_rank,
 			source_db
-		FROM SAILW1151V.HDR25_BMI_WEIGHT
+		FROM SAILWNNNNV.BMI_WEIGHT
 		WHERE 
 			source_db = 'NCCH'
 		UNION ALL 
@@ -1521,7 +1521,7 @@ FROM
 			'6' 				AS source_rank,
 			source_db			
 		FROM 
-			SAILW1151V.HDR25_BMI_PEDW
+			SAILWNNNNV.BMI_PEDW
 	)
 ;
 
@@ -1529,9 +1529,9 @@ FROM
 ---- Linking WDSD tables
 -- we only want to select ALFs with valid WOB, valid gndr_cd, and those who were alive after the start date.
 -- we also calculate how many days each ALF has contributed to the data so we created a follow_up_dod (when they died) and follow_up_res (when they moved out of Wales)
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_COMBO_STAGE_2');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_COMBO_STAGE_2');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_STAGE_2
+CREATE TABLE SAILWNNNNV.BMI_COMBO_STAGE_2
 (
 		ALF_E        	BIGINT,
 		sex				CHAR(1),
@@ -1553,20 +1553,20 @@ CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_STAGE_2
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_COMBO_STAGE_2 with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_COMBO_STAGE_2 with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_COMBO_STAGE_2 activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_COMBO_STAGE_2 activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_COMBO_STAGE_2 -- attaching dod, from_dt, to_dt to BMI_COMBO and creating the follow_up field.
+INSERT INTO SAILWNNNNV.BMI_COMBO_STAGE_2 -- attaching dod, from_dt, to_dt to BMI_COMBO and creating the follow_up field.
 SELECT
 	*,
 	-- counting how many days they contributed to the data before death
 	-- this creates a flag which counts the difference between study start date and DOD.
 	-- we will remove those with > 31 days follow up in the next stage.
-	abs(DAYS_BETWEEN(dod, SAILW1151V.HDR25_BMI_DATE_FROM)) AS follow_up_dod,
+	abs(DAYS_BETWEEN(dod, SAILWNNNNV.BMI_DATE_FROM)) AS follow_up_dod,
 	-- counting how many days they contributed to the data before moving out
-	abs(DAYS_BETWEEN(active_from, SAILW1151V.HDR25_BMI_DATE_TO)) AS follow_up_res
+	abs(DAYS_BETWEEN(active_from, SAILWNNNNV.BMI_DATE_TO)) AS follow_up_res
 FROM
 	(
 	SELECT DISTINCT 
@@ -1589,17 +1589,17 @@ FROM
 			ELSE '9999-01-01'
 			END AS dod
 	FROM 
-		SAILW1151V.HDR25_BMI_COMBO_STAGE_1 a
+		SAILWNNNNV.BMI_COMBO_STAGE_1 a
 	LEFT JOIN
 		(
 		SELECT DISTINCT
 		*, 
 		CASE -- if they lived in Wales before the study start date, this is changed to the study start date for the calculation of follow_up_res
-			WHEN active_from < SAILW1151V.HDR25_BMI_DATE_FROM THEN SAILW1151V.HDR25_BMI_DATE_FROM
+			WHEN active_from < SAILWNNNNV.BMI_DATE_FROM THEN SAILWNNNNV.BMI_DATE_FROM
 			ELSE active_from
 			END AS active_from_2,
 		CASE -- if they are still living in Wales at present, change to end of study date.
-			WHEN active_to IS NULL THEN SAILW1151V.HDR25_BMI_DATE_TO
+			WHEN active_to IS NULL THEN SAILWNNNNV.BMI_DATE_TO
 			ELSE active_to
 			END AS active_to_2
 		FROM
@@ -1612,23 +1612,23 @@ FROM
 				CAST(activefrom AS date) AS active_from,
 				CAST(activeto AS date) AS active_to
 			FROM
-				SAILW1151V.HDR25_BMI_ALG_WDSD -- the single view wdsd table.
+				SAILWNNNNV.BMI_ALG_WDSD -- the single view wdsd table.
 			)
 		) b
 	ON a.ALF_E = b.ALF_E AND a.bmi_dt BETWEEN b.active_from AND b.active_to_2
 	WHERE 
 		b.wob IS NOT NULL -- we only want to keep ALFs that have WOB
 		AND (b.sex IN ('1', '2') AND b.sex IS NOT NULL) -- we want ALFs with valid gndr_cd
-		OR 	b.dod > SAILW1151V.HDR25_BMI_DATE_FROM -- we want ALFs who were alive after the start date.
+		OR 	b.dod > SAILWNNNNV.BMI_DATE_FROM -- we want ALFs who were alive after the start date.
 		-- we want ALFs who were alive after the start date. NOTE if I use 'AND', this returns 0 entries. 'OR' function works.
 	);
 
 
 ------- selecting only those with 31 days follow up
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_COMBO');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_COMBO');
 -- this creates the general combo table.
 
-CREATE TABLE SAILW1151V.HDR25_BMI_COMBO
+CREATE TABLE SAILWNNNNV.BMI_COMBO
 (
 		ALF_E        	BIGINT,
 		sex				CHAR(1),
@@ -1650,12 +1650,12 @@ CREATE TABLE SAILW1151V.HDR25_BMI_COMBO
 )
 DISTRIBUTE BY HASH(ALF_E);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_COMBO with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_COMBO with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_COMBO activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_COMBO activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_COMBO
+INSERT INTO SAILWNNNNV.BMI_COMBO
 SELECT
 	ALF_E,
 	sex,
@@ -1670,18 +1670,18 @@ SELECT
 	source_rank,
 	source_db,
 	CASE 
-		WHEN active_from IS NULL		THEN SAILW1151V.HDR25_BMI_DATE_FROM
+		WHEN active_from IS NULL		THEN SAILWNNNNV.BMI_DATE_FROM
 		WHEN active_from IS NOT NULL	THEN active_from
 		END AS active_from,
 	CASE
 		WHEN active_to IS NOT NULL 		THEN active_to
-		WHEN active_to IS NULL 			THEN SAILW1151V.HDR25_BMI_DATE_TO
+		WHEN active_to IS NULL 			THEN SAILWNNNNV.BMI_DATE_TO
 		END AS active_to,
 	dod,
 	follow_up_dod,
 	follow_up_res
 FROM 
-	SAILW1151V.HDR25_BMI_COMBO_STAGE_2
+	SAILWNNNNV.BMI_COMBO_STAGE_2
 WHERE 
 	follow_up_dod > 31; -- we only want ALFs who were alive/in the study after 31 days of the study start date.
 
@@ -1690,20 +1690,20 @@ COMMIT;
 ---------------------------------------------
 -- Stage 3. Calculating age and pairing height and weight
 --------------------------------------------
-CREATE OR REPLACE VARIABLE SAILW1151V.HDR25_BMI_DATE_FROM  DATE;
-SET SAILW1151V.HDR25_BMI_DATE_FROM = '2000-01-01' ; -- 'YYYY-MM-DD'
+CREATE OR REPLACE VARIABLE SAILWNNNNV.BMI_DATE_FROM  DATE;
+SET SAILWNNNNV.BMI_DATE_FROM = '2000-01-01' ; -- 'YYYY-MM-DD'
 
-CREATE OR REPLACE VARIABLE SAILW1151V.HDR25_BMI_DATE_TO  DATE;
-SET SAILW1151V.HDR25_BMI_DATE_TO = '2022-12-31' ; -- 'YYYY-MM-DD'
+CREATE OR REPLACE VARIABLE SAILWNNNNV.BMI_DATE_TO  DATE;
+SET SAILWNNNNV.BMI_DATE_TO = '2022-12-31' ; -- 'YYYY-MM-DD'
 
 --6.1. First we extract the height recorded when ALFs were children.
 	-- then we extract the weight recorded when ALFs were children.
 	-- then we pair the records as long as the readings were between 180 days of each other and calculate the BMI values for that pairing.
 	-- we then sort them out by event_order and date_gap, and then choose the most recent reading for that 6 month period.
 	
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_1'); -- pairing height and weight values and counting the difference between dates
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_COMBO_CYP_STAGE_1'); -- pairing height and weight values and counting the difference between dates
 
-CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_1
+CREATE TABLE SAILWNNNNV.BMI_COMBO_CYP_STAGE_1
 (
 		alf_e        	BIGINT,
 		sex				CHAR(1),
@@ -1725,12 +1725,12 @@ CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_1
 )
 DISTRIBUTE BY HASH(alf_e);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_1 with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_COMBO_CYP_STAGE_1 with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_1 activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_COMBO_CYP_STAGE_1 activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_1
+INSERT INTO SAILWNNNNV.BMI_COMBO_CYP_STAGE_1
 WITH height AS -- extracting height records when ALFs were children
 (
 SELECT 
@@ -1825,7 +1825,7 @@ FROM
 		follow_up_dod,
 		follow_up_res
 	FROM 
-		SAILW1151V.HDR25_BMI_COMBO
+		SAILWNNNNV.BMI_COMBO
 	WHERE 
 		height IS NOT NULL
 	)
@@ -1897,7 +1897,7 @@ FROM
 			follow_up_dod,
 			follow_up_res
 		FROM 
-			SAILW1151V.HDR25_BMI_COMBO 
+			SAILWNNNNV.BMI_COMBO 
 		WHERE 
 			weight IS NOT NULL
 		)
@@ -1955,10 +1955,10 @@ ORDER BY
 -----------------------------------------------------------------------------------------------
 -- 6.2. Joining the height and weight values with BMI values from COMBO so all entries with BMI value will be together.
 -----------------------------------------------------------------------------------------------
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_2'); 
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_COMBO_CYP_STAGE_2'); 
 -- calculating BMI values from height and weight from pairs and union entries which only have BMI_val
 
-CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_2
+CREATE TABLE SAILWNNNNV.BMI_COMBO_CYP_STAGE_2
 (
 		alf_e        	BIGINT,
 		sex				CHAR(1),
@@ -1978,12 +1978,12 @@ CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_2
 )
 DISTRIBUTE BY HASH(alf_e);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_2 with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_COMBO_CYP_STAGE_2 with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_2 activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_COMBO_CYP_STAGE_2 activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_2
+INSERT INTO SAILWNNNNV.BMI_COMBO_CYP_STAGE_2
  -- calculate the BMI_VAL using height and weight values from each pair and union entries from BMI_VAL table.
 SELECT DISTINCT 
 	alf_e,
@@ -2002,7 +2002,7 @@ SELECT DISTINCT
 	follow_up_dod,
 	follow_up_res
 FROM 
-	SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_1 -- the table with the height and weight values in one row for each alf.
+	SAILWNNNNV.BMI_COMBO_CYP_STAGE_1 -- the table with the height and weight values in one row for each alf.
 WHERE 
 	DEC(DEC(weight, 10, 2)/(height*height),10) BETWEEN 12 AND 100 -- removes extreme values
 	AND date_gap < 180 -- only selecting pairs within 6mo of each other.
@@ -2026,7 +2026,7 @@ SELECT DISTINCT
 	follow_up_dod,
 	follow_up_res
 FROM 
-	SAILW1151V.HDR25_BMI_COMBO
+	SAILWNNNNV.BMI_COMBO
 WHERE 
 	source_type = 'BMI value'
 	AND (DAYS_BETWEEN(bmi_dt, wob)/365.25 >= 2 AND DAYS_BETWEEN(bmi_dt, wob)/365.25 < 19) -- those between 2 and 18 years old.
@@ -2035,9 +2035,9 @@ WHERE
 -----------------------------------------------------------------------------------------------
 -- 6.3. Assigning BMI category to BMI values
 -----------------------------------------------------------------------------------------------
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_3');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_COMBO_CYP_STAGE_3');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_3
+CREATE TABLE SAILWNNNNV.BMI_COMBO_CYP_STAGE_3
 (
 		alf_e        		BIGINT,
 		sex				CHAR(1),
@@ -2062,12 +2062,12 @@ CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_3
 )
 DISTRIBUTE BY HASH(alf_e);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_3 with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_COMBO_CYP_STAGE_3 with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_3 activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_COMBO_CYP_STAGE_3 activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_3
+INSERT INTO SAILWNNNNV.BMI_COMBO_CYP_STAGE_3
 SELECT
 	*
 FROM
@@ -2176,13 +2176,13 @@ FROM
 				follow_up_dod,
 				follow_up_res
 			FROM 
-				SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_2 -- all entries from source types BMI_VALUE and WEIGHT
+				SAILWNNNNV.BMI_COMBO_CYP_STAGE_2 -- all entries from source types BMI_VALUE and WEIGHT
 			WHERE 
 				abs(DAYS_BETWEEN(bmi_dt, wob)/365.25 >= 2 AND DAYS_BETWEEN(bmi_dt, wob)/365.25 < 19) -- those between 2 and just before they turn 19 years old.
 				AND BMI_VAL IS NOT NULL
 			) a
 		LEFT JOIN 
-			SAILW1151V.HDR25_BMI_CENTILES b -- table with percentiles and z-score allocations 
+			SAILWNNNNV.BMI_CENTILES b -- table with percentiles and z-score allocations 
 		ON a.sex = b.sex  and a.age_months = b.age_months -- assigns BMI category based on sex and age in months.
 		ORDER BY 
 			alf_e, 
@@ -2197,9 +2197,9 @@ COMMIT;
 -----------------------------------------------------------------------------------------------
 -- 6.4 Final BMI_COMBO_CYP table. Joining the BMI values to BMI categories from WLGP and PEDW
 -----------------------------------------------------------------------------------------------
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_COMBO_CYP');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_COMBO_CYP');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_CYP
+CREATE TABLE SAILWNNNNV.BMI_COMBO_CYP
 (
 		alf_e        		BIGINT,
 		sex					CHAR(1),
@@ -2227,12 +2227,12 @@ CREATE TABLE SAILW1151V.HDR25_BMI_COMBO_CYP
 )
 DISTRIBUTE BY HASH(alf_e);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_COMBO_CYP with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_COMBO_CYP with distribution and detailed indexes all');
 COMMIT; 
 
-ALTER TABLE SAILW1151V.HDR25_BMI_COMBO_CYP activate not logged INITIALLY;
+ALTER TABLE SAILWNNNNV.BMI_COMBO_CYP activate not logged INITIALLY;
 
-INSERT INTO SAILW1151V.HDR25_BMI_COMBO_CYP
+INSERT INTO SAILWNNNNV.BMI_COMBO_CYP
 SELECT DISTINCT 
 	alf_e,
 	sex,
@@ -2295,7 +2295,7 @@ FROM
 		follow_up_dod,
 		follow_up_res
 	FROM
-		SAILW1151V.HDR25_BMI_COMBO 
+		SAILWNNNNV.BMI_COMBO 
 	WHERE 
 	 	(DAYS_BETWEEN(bmi_dt, wob)/365.25 >= 2 
 	 		AND DAYS_BETWEEN(bmi_dt, wob)/365.25 < 19) -- those between 2 and 18 years old.
@@ -2330,7 +2330,7 @@ FROM
 		follow_up_dod,
 		follow_up_res
 	FROM
-		SAILW1151V.HDR25_BMI_COMBO_CYP_STAGE_3 -- table with BMI categories assigned to BMI values for CYP.
+		SAILWNNNNV.BMI_COMBO_CYP_STAGE_3 -- table with BMI categories assigned to BMI values for CYP.
 	WHERE 
 	 	abs((DAYS_BETWEEN(bmi_dt, wob)/365.25 >= 2 -- 2 years old
 	 	AND DAYS_BETWEEN(bmi_dt, wob)/365.25 < 19)) -- before they turn 19
@@ -2356,9 +2356,9 @@ COMMIT;
 	--6. BMI category from ICD-10 codes (PEDW)
 	
 -- This is the first cleaning stage, where we flag same-day inconsistencies.
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_UNCLEAN_CYP');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_UNCLEAN_CYP');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_UNCLEAN_CYP
+CREATE TABLE SAILWNNNNV.BMI_UNCLEAN_CYP
 (
 		alf_e        		BIGINT,
 		sex					CHAR(1),
@@ -2387,10 +2387,10 @@ CREATE TABLE SAILW1151V.HDR25_BMI_UNCLEAN_CYP
 )
 DISTRIBUTE BY HASH(alf_e);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_UNCLEAN_CYP with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_UNCLEAN_CYP with distribution and detailed indexes all');
 COMMIT; 
 
-INSERT INTO SAILW1151V.HDR25_BMI_UNCLEAN_CYP
+INSERT INTO SAILWNNNNV.BMI_UNCLEAN_CYP
 SELECT 
 	*
 FROM 
@@ -2427,14 +2427,14 @@ FROM
 		WHEN BMI_VAL IS NOT NULL THEN -- BMI values were recorded.
 			CASE 	
 				-- same day readings with more than 5% difference in bmi_value BUT has same BMI_recorded, keep the first reading.
-				WHEN (dt_diff_after = 0 	AND (val_diff_after/bmi_val) > SAILW1151V.HDR25_BMI_SAME_DAY AND cat_diff_after = 0) 		THEN 5 -- same day readings, more than 5% BMI value, but same category recording -- we want to keep this record.
+				WHEN (dt_diff_after = 0 	AND (val_diff_after/bmi_val) > SAILWNNNNV.BMI_SAME_DAY AND cat_diff_after = 0) 		THEN 5 -- same day readings, more than 5% BMI value, but same category recording -- we want to keep this record.
 				-- same day readings with more than 5% difference in bmi_value AND has different categories recorded
-				WHEN (dt_diff_before = 0 	AND (val_diff_before/bmi_val) > SAILW1151V.HDR25_BMI_SAME_DAY)
-					OR (dt_diff_after = 0 	AND (val_diff_after/bmi_val) > SAILW1151V.HDR25_BMI_SAME_DAY)	
+				WHEN (dt_diff_before = 0 	AND (val_diff_before/bmi_val) > SAILWNNNNV.BMI_SAME_DAY)
+					OR (dt_diff_after = 0 	AND (val_diff_after/bmi_val) > SAILWNNNNV.BMI_SAME_DAY)	
 					AND cat_diff_after != 0																								THEN 3 -- more than 5% weight difference on same day reading, and different category
 				-- same day reading, less than 5% BMI difference in BMI value, BUT has change of 1 BMI category. We want to keep, but flag them in case:
-				WHEN ((dt_diff_before = 0 	AND (val_diff_before/bmi_val) < SAILW1151V.HDR25_BMI_SAME_DAY)
-					and (dt_diff_after = 0 	AND (val_diff_after/bmi_val) < SAILW1151V.HDR25_BMI_SAME_DAY))
+				WHEN ((dt_diff_before = 0 	AND (val_diff_before/bmi_val) < SAILWNNNNV.BMI_SAME_DAY)
+					and (dt_diff_after = 0 	AND (val_diff_after/bmi_val) < SAILWNNNNV.BMI_SAME_DAY))
 					AND (cat_diff_before = 1 OR cat_diff_after = 1)																		THEN 6	
 				ELSE NULL END
 		END AS bmi_flg			
@@ -2444,7 +2444,7 @@ FROM
             alf_e, 
 			wob
 		FROM
-			SAILW1151V.HDR25_bmi_COMBO_CYP
+			SAILWNNNNV.bmi_COMBO_CYP
 		) a
 	LEFT JOIN
 		( -- here we identify changes in the BMI categories / BMI values for same-day / over time period.
@@ -2468,7 +2468,7 @@ FROM
 				ELSE NULL 
 				END AS bmi_c
 			FROM 
-				SAILW1151V.HDR25_bmi_COMBO_CYP
+				SAILWNNNNV.bmi_COMBO_CYP
 			)
 		ORDER BY alf_e, bmi_dt
 		) b
@@ -2488,10 +2488,10 @@ COMMIT;
 -- We are also adding the pregnancy flags here.
 
 --8.1 Removing same-day entries that were not the highest hierarchy, and only selecting entries that were not flagged as inconsistent in UNCLEAN.
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_CLEAN_CYP_STAGE_1');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_CLEAN_CYP_STAGE_1');
 
 -- this table selects entries that have BMI_FLG IS NULL or BMI_FLG = 5 or BMI_FLG = 6 in the previous step.
-CREATE TABLE SAILW1151V.HDR25_BMI_CLEAN_CYP_STAGE_1  
+CREATE TABLE SAILWNNNNV.BMI_CLEAN_CYP_STAGE_1  
 (
 		alf_e        		BIGINT,
 		sex					CHAR(1),
@@ -2520,10 +2520,10 @@ CREATE TABLE SAILW1151V.HDR25_BMI_CLEAN_CYP_STAGE_1
 )
 DISTRIBUTE BY HASH(alf_e);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_CLEAN_CYP_STAGE_1  with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_CLEAN_CYP_STAGE_1  with distribution and detailed indexes all');
 COMMIT; 
 
-INSERT INTO SAILW1151V.HDR25_BMI_CLEAN_CYP_STAGE_1
+INSERT INTO SAILWNNNNV.BMI_CLEAN_CYP_STAGE_1
 SELECT
 		alf_e,
 		sex,
@@ -2591,7 +2591,7 @@ FROM
 				bmi_dt,
 				min(source_rank) AS source_rank -- choose the entry with highest hierarchical rank
 			FROM
-				SAILW1151V.HDR25_BMI_UNCLEAN_CYP
+				SAILWNNNNV.BMI_UNCLEAN_CYP
 			GROUP BY
 				alf_e,
 				bmi_dt,
@@ -2601,7 +2601,7 @@ FROM
 				bmi_dt 
 			) a
 		LEFT JOIN 
-			SAILW1151V.HDR25_BMI_UNCLEAN_CYP c
+			SAILWNNNNV.BMI_UNCLEAN_CYP c
 		ON a.alf_e = c.alf_e AND a.bmi_dt=c.bmi_dt AND a.source_rank = c.source_rank
 		WHERE bmi_flg IS NULL -- we want to only include entries that are not flagged from the items that were the highest hierarchical source.
 		) 
@@ -2618,9 +2618,9 @@ COMMIT;
 -----------------------------------------------------------------------------------------------
 --8.2. Final BMI_CLEAN_CYP table. Now we add pregnancy flags.
 -----------------------------------------------------------------------------------------------
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_CLEAN_CYP');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_CLEAN_CYP');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_CLEAN_CYP  -- this table only selects entries that are NOT flagged in the previous step.
+CREATE TABLE SAILWNNNNV.BMI_CLEAN_CYP  -- this table only selects entries that are NOT flagged in the previous step.
 (
 		alf_e        		BIGINT,
 		sex					CHAR(1),
@@ -2651,10 +2651,10 @@ CREATE TABLE SAILW1151V.HDR25_BMI_CLEAN_CYP  -- this table only selects entries 
 )
 DISTRIBUTE BY HASH(alf_e);
 
-CALL SYSPROC.ADMIN_CMD('runstats on table SAILW1151V.HDR25_BMI_CLEAN_CYP  with distribution and detailed indexes all');
+CALL SYSPROC.ADMIN_CMD('runstats on table SAILWNNNNV.BMI_CLEAN_CYP  with distribution and detailed indexes all');
 COMMIT; 
 
-INSERT INTO SAILW1151V.HDR25_BMI_CLEAN_CYP
+INSERT INTO SAILWNNNNV.BMI_CLEAN_CYP
 	SELECT
 		alf_e,
 		sex,
@@ -2693,9 +2693,9 @@ INSERT INTO SAILW1151V.HDR25_BMI_CLEAN_CYP
 				END AS pregnancy_flg, -- this is to  indicate whether the weight recorded is pregnancy related.
 			ROW_NUMBER() OVER (PARTITION BY a.alf_e, a.bmi_dt ORDER BY a.source_rank) AS counts
 		FROM 
-			SAILW1151V.HDR25_BMI_CLEAN_CYP_STAGE_1 a
+			SAILWNNNNV.BMI_CLEAN_CYP_STAGE_1 a
 		LEFT JOIN 
-			SAILW1151V.HDR25_BMI_ALG_MIDS_BIRTH e
+			SAILWNNNNV.BMI_ALG_MIDS_BIRTH e
 		ON a.alf_e = e.MOTHER_alf_e
 		WHERE source_db != 'MIDS' -- entries from databases that are not MIDS could be pre/post/null.
 		UNION
@@ -2704,7 +2704,7 @@ INSERT INTO SAILW1151V.HDR25_BMI_CLEAN_CYP
 			'pre-natal' AS PREGNANCY_FLG,
 			ROW_NUMBER() OVER (PARTITION BY alf_e, bmi_dt ORDER BY source_rank) AS counts
 		FROM 
-			SAILW1151V.HDR25_BMI_CLEAN_CYP_STAGE_1 a
+			SAILWNNNNV.BMI_CLEAN_CYP_STAGE_1 a
 		WHERE source_db = 'MIDS' -- all entries from MIDS are pre-natal.
 		) 
 	WHERE counts = 1 -- removes duplicates created from pregnancy_flgs.
@@ -2713,14 +2713,14 @@ INSERT INTO SAILW1151V.HDR25_BMI_CLEAN_CYP
 COMMIT;
 
 -- Display UNCLEAN and CLEAN tables:
-SELECT * FROM SAILW1151V.HDR25_BMI_UNCLEAN_CYP;
-SELECT * FROM SAILW1151V.HDR25_BMI_CLEAN_CYP;
+SELECT * FROM SAILWNNNNV.BMI_UNCLEAN_CYP;
+SELECT * FROM SAILWNNNNV.BMI_CLEAN_CYP;
 
 
 --------------------------------------------------------------
 -- END OF CODE --
 --------------------------------------------------------------
--- Note: See Reports folder to use SQL codes and Jupyter notebook for reporting.
+-- Note: See Reports folder to use SQL codes and R files for reporting.
 
 
 

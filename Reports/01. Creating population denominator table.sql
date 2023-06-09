@@ -6,9 +6,9 @@
 	-- e.g. if an ALF died on the 15th Feb, we will only collect information from them until 31 January.
 	-- NOTE: Each month will have a different distinct alf count as there will be deaths/movement in and out of Wales.
 -- this code is divided into yearly chunks (2000-2022) which creates a long table of all the individuals in Wales with their LSOA2011 information for each month-year.
-CALL FNC.DROP_IF_EXISTS ('SAILW1151V.HDR25_BMI_POP_DENOM');
+CALL FNC.DROP_IF_EXISTS ('SAILWNNNNV.BMI_POP_DENOM');
 
-CREATE TABLE SAILW1151V.HDR25_BMI_POP_DENOM
+CREATE TABLE SAILWNNNNV.BMI_POP_DENOM
 (
 	alf_e			BIGINT,
 	sex				CHAR(1), -- gndr_cd (1 = Male, 2 = Female)
@@ -22,7 +22,7 @@ CREATE TABLE SAILW1151V.HDR25_BMI_POP_DENOM
 	end_date		DATE -- end date of residency period
 );
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2000
 WITH t1 AS -- table for Jan 2000
 	(
@@ -679,7 +679,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2001
 WITH t1 AS -- table for Jan 2001
 	(
@@ -1336,7 +1336,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2002
 WITH t1 AS -- table for Jan 2002
 	(
@@ -1993,7 +1993,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2003
 WITH t1 AS -- table for Jan 2003
 	(
@@ -2650,7 +2650,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2004
 WITH t1 AS -- table for Jan 2004
 	(
@@ -3307,7 +3307,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2005
 WITH t1 AS -- table for Jan 2005
 	(
@@ -3964,7 +3964,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2006
 WITH t1 AS -- table for Jan 2006
 	(
@@ -4621,7 +4621,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2007
 WITH t1 AS -- table for Jan 2007
 	(
@@ -5278,7 +5278,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2008
 WITH t1 AS -- table for Jan 2008
 	(
@@ -5935,7 +5935,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2009
 WITH t1 AS -- table for Jan 2009
 	(
@@ -6592,7 +6592,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2010
 WITH t1 AS -- table for Jan 2010
 	(
@@ -7249,7 +7249,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2011
 WITH t1 AS -- table for Jan 2011
 	(
@@ -7906,7 +7906,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2012
 WITH t1 AS -- table for Jan 2012
 	(
@@ -8563,7 +8563,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2013
 WITH t1 AS -- table for Jan 2013
 	(
@@ -9220,7 +9220,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2014
 WITH t1 AS -- table for Jan 2014
 	(
@@ -9877,7 +9877,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2015
 WITH t1 AS -- table for Jan 2015
 	(
@@ -10534,7 +10534,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2016
 WITH t1 AS -- table for Jan 2016
 	(
@@ -11191,7 +11191,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2017
 WITH t1 AS -- table for Jan 2017
 	(
@@ -11848,7 +11848,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2018
 WITH t1 AS -- table for Jan 2018
 	(
@@ -12505,7 +12505,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2019
 WITH t1 AS -- table for Jan 2019
 	(
@@ -13162,7 +13162,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2020
 WITH t1 AS -- table for Jan 2020
 	(
@@ -13819,7 +13819,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2021
 WITH t1 AS -- table for Jan 2021
 	(
@@ -14476,7 +14476,7 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_POP_DENOM
+INSERT INTO SAILWNNNNV.BMI_POP_DENOM
 -- 2022
 WITH t1 AS -- table for Jan 2022
 	(
@@ -15134,5 +15134,5 @@ SELECT alf_e, sex, wob, dod, lsoa2011_cd, denom_year, denom_month, cohort, start
 COMMIT;
 
 ----
-SELECT count(DISTINCT alf_e), count(*) FROM SAILW1151V.HDR25_BMI_POP_DENOM
+SELECT count(DISTINCT alf_e), count(*) FROM SAILWNNNNV.BMI_POP_DENOM
 --WHERE denom_year = 2011 AND denom_month = 1

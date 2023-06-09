@@ -10,32 +10,32 @@
 ------------------------------------------------
 
 --Step 1. set the study start date. This will be used to filter out ALFs who have died before your specified study period.
-CREATE OR REPLACE VARIABLE SAILW1151V.HDR25_DATE_FROM  DATE;
-SET SAILW1151V.HDR25_DATE_FROM = '2000-01-01';
+CREATE OR REPLACE VARIABLE SAILWNNNNV.DATE_FROM  DATE;
+SET SAILWNNNNV.DATE_FROM = '2000-01-01';
 
-CREATE OR REPLACE VARIABLE SAILW1151V.HDR25_DATE_TO  DATE;
-SET SAILW1151V.HDR25_DATE_TO = '2022-12-31';
+CREATE OR REPLACE VARIABLE SAILWNNNNV.DATE_TO  DATE;
+SET SAILWNNNNV.DATE_TO = '2022-12-31';
 
 --Step 2. Define your tables here. These tables will be used to extract demographical information for your cohort.
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_COHORT
-FOR SAILW1151V.HDR25_BMI_POP_DENOM ; -- has all the ALFs living in Wales from 2010-2022
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_COHORT
+FOR SAILWNNNNV.BMI_POP_DENOM ; -- has all the ALFs living in Wales from 2010-2022
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_OUTPUT
-FOR SAILW1151V.HDR25_BMI_CLEAN_ADULTS; -- our final BMI output.
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_OUTPUT
+FOR SAILWNNNNV.BMI_CLEAN_ADULTS; -- our final BMI output.
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ETHN
-FOR SAILW1151V.RRDA_ETHN ; -- has ethnicity field.
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ETHN
+FOR SAILWNNNNV.RRDA_ETHN ; -- has ethnicity field.
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_WDSD
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_WDSD
 FOR SAILWMC_V.C19_COHORT_WDSD_PER_RESIDENCE_GPREG_20230323 ; -- sinkle view WDSD for demographics
 --SAILXXXXV.WDSD_AR_PERS_20220905
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_WIMD2019
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_WIMD2019
 FOR sailwmc_v.C19_COHORT_WDSD_SINGLE_CLEAN_GEO_CHAR_LSOA2011; -- has wimd2019
 -- SAILWMC_V.C19_COHORT_WDSD_CLEAN_ADD_GEOG_CHAR_LSOA2011_20230126 
 
-CREATE OR REPLACE ALIAS SAILW1151V.HDR25_BMI_ALG_LSOA_LHB_LOOKUP -- has rural/urban and LHB
-FOR sailw1151v.HDR25_BMI_GEOGRAPHY_LOOKUP ;
+CREATE OR REPLACE ALIAS SAILWNNNNV.BMI_ALG_LSOA_LHB_LOOKUP -- has rural/urban and LHB
+FOR SAILWNNNNV.BMI_GEOGRAPHY_LOOKUP ;
 
 ;
 ------------------------------------------------
@@ -43,9 +43,9 @@ FOR sailw1151v.HDR25_BMI_GEOGRAPHY_LOOKUP ;
 ------------------------------------------------
 
 
-CALL FNC.DROP_IF_EXISTS('SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT'); 
+CALL FNC.DROP_IF_EXISTS('SAILWNNNNV.BMI_TABLEONE_GROUPED5_ADULT'); 
 
-CREATE TABLE SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT
+CREATE TABLE SAILWNNNNV.BMI_TABLEONE_GROUPED5_ADULT
 (
 -- from denominator table
 		alf_e        			BIGINT, 
@@ -71,7 +71,7 @@ CREATE TABLE SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT
 );
 
 
-INSERT INTO SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT
+INSERT INTO SAILWNNNNV.BMI_TABLEONE_GROUPED5_ADULT
 -- 2000-2004
 WITH t1 AS
 -- this chunk extracts the distinct ALFs living in Wales in 2000-2004. We select their most recent address in 2000-2004, and attaches their most recent BMI record in 2000-2004 if they have one.
@@ -139,7 +139,7 @@ WITH t1 AS
 				dod, 
 				denom_year, 
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY start_date, end_date desc) AS dt_order -- to identify those with multiple addresses in this year.
-			FROM SAILW1151V.HDR25_BMI_ALG_COHORT a -- the population denominator table
+			FROM SAILWNNNNV.BMI_ALG_COHORT a -- the population denominator table
 			WHERE denom_year IN ('2000', '2001', '2002', '2003', '2004')-- those that are living in Wales in this year
 			AND cohort = 1 -- who are Adults at some point this year. There will be some that would have turned 19.
 			) 
@@ -147,7 +147,7 @@ WITH t1 AS
 		)a
 	LEFT JOIN
 	-- we extract their ethnicity
-		SAILW1151V.HDR25_BMI_ETHN AS b 
+		SAILWNNNNV.BMI_ETHN AS b 
 	ON a.alf_e = b.alf_e
 	LEFT JOIN
 	-- we extract the BMI data from our output
@@ -164,7 +164,7 @@ WITH t1 AS
 				source_db,
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY bmi_dt desc) AS dt_order
 			FROM
-				SAILW1151V.HDR25_BMI_ALG_OUTPUT
+				SAILWNNNNV.BMI_ALG_OUTPUT
 			WHERE bmi_year IN ('2000', '2001', '2002', '2003', '2004')
 			) 
 		WHERE dt_order = 1
@@ -186,9 +186,9 @@ t2 AS
 			,	g.LHB_Name					AS lhb
 			, 	ROW_NUMBER() OVER (PARTITION BY e.lsoa2011_cd ORDER BY wimd_2019_quintile_desc) AS row_seq
 		FROM
-			SAILW1151V.HDR25_BMI_WIMD2019 AS e -- getting wimd2019
+			SAILWNNNNV.BMI_WIMD2019 AS e -- getting wimd2019
 		LEFT JOIN 
-			SAILW1151V.HDR25_BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
+			SAILWNNNNV.BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
 		ON e.LSOA2011_CD=g.LSOA2011_Code 
 		WHERE e.lsoa2011_cd IS NOT NULL
 		)
@@ -236,7 +236,7 @@ ON t1.lsoa2011 = t2.lsoa2011 -- this matches the residency information of ALFs
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT
+INSERT INTO SAILWNNNNV.BMI_TABLEONE_GROUPED5_ADULT
 -- 2005-2009
 WITH t1 AS
 -- this chunk extracts the distinct ALFs living in Wales in 2005-2009. We select their most recent address in 2005-2009, and attaches their most recent BMI record in 2005-2009 if they have one.
@@ -304,7 +304,7 @@ WITH t1 AS
 				dod, 
 				denom_year, 
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY start_date, end_date desc) AS dt_order -- to identify those with multiple addresses in this year.
-			FROM SAILW1151V.HDR25_BMI_ALG_COHORT a -- the population denominator table
+			FROM SAILWNNNNV.BMI_ALG_COHORT a -- the population denominator table
 			WHERE denom_year IN ('2005', '2006', '2007', '2008', '2009')-- those that are living in Wales in this year
 			AND cohort = 1 -- who are Adults at some point this year. There will be some that would have turned 19.
 			) 
@@ -312,7 +312,7 @@ WITH t1 AS
 		)a
 	LEFT JOIN
 	-- we extract their ethnicity
-		SAILW1151V.HDR25_BMI_ETHN AS b 
+		SAILWNNNNV.BMI_ETHN AS b 
 	ON a.alf_e = b.alf_e
 	LEFT JOIN
 	-- we extract the BMI data from our output
@@ -329,7 +329,7 @@ WITH t1 AS
 				source_db,
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY bmi_dt desc) AS dt_order
 			FROM
-				SAILW1151V.HDR25_BMI_ALG_OUTPUT
+				SAILWNNNNV.BMI_ALG_OUTPUT
 			WHERE bmi_year IN ('2005', '2006', '2007', '2008', '2009')
 			) 
 		WHERE dt_order = 1
@@ -351,9 +351,9 @@ t2 AS
 			,	g.LHB_Name					AS lhb
 			, 	ROW_NUMBER() OVER (PARTITION BY e.lsoa2011_cd ORDER BY wimd_2019_quintile_desc) AS row_seq
 		FROM
-			SAILW1151V.HDR25_BMI_WIMD2019 AS e -- getting wimd2019
+			SAILWNNNNV.BMI_WIMD2019 AS e -- getting wimd2019
 		LEFT JOIN 
-			SAILW1151V.HDR25_BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
+			SAILWNNNNV.BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
 		ON e.LSOA2011_CD=g.LSOA2011_Code 
 		WHERE e.lsoa2011_cd IS NOT NULL
 		)
@@ -401,7 +401,7 @@ ON t1.lsoa2011 = t2.lsoa2011 -- this matches the residency information of ALFs
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT
+INSERT INTO SAILWNNNNV.BMI_TABLEONE_GROUPED5_ADULT
 -- 2010-2014
 WITH t1 AS
 -- this chunk extracts the distinct ALFs living in Wales in 2010-2014. We select their most recent address in 2010-2014, and attaches their most recent BMI record in 2010-2014 if they have one.
@@ -469,7 +469,7 @@ WITH t1 AS
 				dod, 
 				denom_year, 
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY start_date, end_date desc) AS dt_order -- to identify those with multiple addresses in this year.
-			FROM SAILW1151V.HDR25_BMI_ALG_COHORT a -- the population denominator table
+			FROM SAILWNNNNV.BMI_ALG_COHORT a -- the population denominator table
 			WHERE denom_year IN ('2010', '2011', '2012', '2013', '2014')-- those that are living in Wales in this year
 			AND cohort = 1 -- who are Adults at some point this year. There will be some that would have turned 19.
 			) 
@@ -477,7 +477,7 @@ WITH t1 AS
 		)a
 	LEFT JOIN
 	-- we extract their ethnicity
-		SAILW1151V.HDR25_BMI_ETHN AS b 
+		SAILWNNNNV.BMI_ETHN AS b 
 	ON a.alf_e = b.alf_e
 	LEFT JOIN
 	-- we extract the BMI data from our output
@@ -494,7 +494,7 @@ WITH t1 AS
 				source_db,
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY bmi_dt desc) AS dt_order
 			FROM
-				SAILW1151V.HDR25_BMI_ALG_OUTPUT
+				SAILWNNNNV.BMI_ALG_OUTPUT
 			WHERE bmi_year IN ('2010', '2011', '2012', '2013', '2014')
 			) 
 		WHERE dt_order = 1
@@ -516,9 +516,9 @@ t2 AS
 			,	g.LHB_Name					AS lhb
 			, 	ROW_NUMBER() OVER (PARTITION BY e.lsoa2011_cd ORDER BY wimd_2019_quintile_desc) AS row_seq
 		FROM
-			SAILW1151V.HDR25_BMI_WIMD2019 AS e -- getting wimd2019
+			SAILWNNNNV.BMI_WIMD2019 AS e -- getting wimd2019
 		LEFT JOIN 
-			SAILW1151V.HDR25_BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
+			SAILWNNNNV.BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
 		ON e.LSOA2011_CD=g.LSOA2011_Code 
 		WHERE e.lsoa2011_cd IS NOT NULL
 		)
@@ -566,7 +566,7 @@ ON t1.lsoa2011 = t2.lsoa2011 -- this matches the residency information of ALFs
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT
+INSERT INTO SAILWNNNNV.BMI_TABLEONE_GROUPED5_ADULT
 -- 2015-2019
 WITH t1 AS
 -- this chunk extracts the distinct ALFs living in Wales in 2015-2019. We select their most recent address in 2015-2019, and attaches their most recent BMI record in 2015-2019 if they have one.
@@ -634,7 +634,7 @@ WITH t1 AS
 				dod, 
 				denom_year, 
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY start_date, end_date desc) AS dt_order -- to identify those with multiple addresses in this year.
-			FROM SAILW1151V.HDR25_BMI_ALG_COHORT a -- the population denominator table
+			FROM SAILWNNNNV.BMI_ALG_COHORT a -- the population denominator table
 			WHERE denom_year IN ('2015', '2016', '2017', '2018', '2019')-- those that are living in Wales in this year
 			AND cohort = 1 -- who are Adults at some point this year. There will be some that would have turned 19.
 			) 
@@ -642,7 +642,7 @@ WITH t1 AS
 		)a
 	LEFT JOIN
 	-- we extract their ethnicity
-		SAILW1151V.HDR25_BMI_ETHN AS b 
+		SAILWNNNNV.BMI_ETHN AS b 
 	ON a.alf_e = b.alf_e
 	LEFT JOIN
 	-- we extract the BMI data from our output
@@ -659,7 +659,7 @@ WITH t1 AS
 				source_db,
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY bmi_dt desc) AS dt_order
 			FROM
-				SAILW1151V.HDR25_BMI_ALG_OUTPUT
+				SAILWNNNNV.BMI_ALG_OUTPUT
 			WHERE bmi_year IN ('2015', '2016', '2017', '2018', '2019')
 			) 
 		WHERE dt_order = 1
@@ -681,9 +681,9 @@ t2 AS
 			,	g.LHB_Name					AS lhb
 			, 	ROW_NUMBER() OVER (PARTITION BY e.lsoa2011_cd ORDER BY wimd_2019_quintile_desc) AS row_seq
 		FROM
-			SAILW1151V.HDR25_BMI_WIMD2019 AS e -- getting wimd2019
+			SAILWNNNNV.BMI_WIMD2019 AS e -- getting wimd2019
 		LEFT JOIN 
-			SAILW1151V.HDR25_BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
+			SAILWNNNNV.BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
 		ON e.LSOA2011_CD=g.LSOA2011_Code 
 		WHERE e.lsoa2011_cd IS NOT NULL
 		)
@@ -731,7 +731,7 @@ ON t1.lsoa2011 = t2.lsoa2011 -- this matches the residency information of ALFs
 
 COMMIT;
 
-INSERT INTO SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT
+INSERT INTO SAILWNNNNV.BMI_TABLEONE_GROUPED5_ADULT
 -- 2020-2022
 WITH t1 AS
 -- this chunk extracts the distinct ALFs living in Wales in 2020-2022. We select their most recent address in 2020-2022, and attaches their most recent BMI record in 2020-2022 if they have one.
@@ -799,7 +799,7 @@ WITH t1 AS
 				dod, 
 				denom_year, 
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY start_date, end_date desc) AS dt_order -- to identify those with multiple addresses in this year.
-			FROM SAILW1151V.HDR25_BMI_ALG_COHORT a -- the population denominator table
+			FROM SAILWNNNNV.BMI_ALG_COHORT a -- the population denominator table
 			WHERE denom_year IN ('2020', '2021', '2022')-- those that are living in Wales in this year
 			AND cohort = 1 -- who are Adults at some point this year. There will be some that would have turned 19.
 			) 
@@ -807,7 +807,7 @@ WITH t1 AS
 		)a
 	LEFT JOIN
 	-- we extract their ethnicity
-		SAILW1151V.HDR25_BMI_ETHN AS b 
+		SAILWNNNNV.BMI_ETHN AS b 
 	ON a.alf_e = b.alf_e
 	LEFT JOIN
 	-- we extract the BMI data from our output
@@ -824,7 +824,7 @@ WITH t1 AS
 				source_db,
 				ROW_NUMBER() OVER (PARTITION BY alf_e ORDER BY bmi_dt desc) AS dt_order
 			FROM
-				SAILW1151V.HDR25_BMI_ALG_OUTPUT
+				SAILWNNNNV.BMI_ALG_OUTPUT
 			WHERE bmi_year IN ('2020', '2021', '2022')
 			) 
 		WHERE dt_order = 1
@@ -846,9 +846,9 @@ t2 AS
 			,	g.LHB_Name					AS lhb
 			, 	ROW_NUMBER() OVER (PARTITION BY e.lsoa2011_cd ORDER BY wimd_2019_quintile_desc) AS row_seq
 		FROM
-			SAILW1151V.HDR25_BMI_WIMD2019 AS e -- getting wimd2019
+			SAILWNNNNV.BMI_WIMD2019 AS e -- getting wimd2019
 		LEFT JOIN 
-			SAILW1151V.HDR25_BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
+			SAILWNNNNV.BMI_ALG_LSOA_LHB_LOOKUP AS g -- getting rural/urban and LHB details
 		ON e.LSOA2011_CD=g.LSOA2011_Code 
 		WHERE e.lsoa2011_cd IS NOT NULL
 		)
@@ -902,4 +902,4 @@ COMMIT;
 
 
 
-SELECT DISTINCT denom_year, count(*) FROM SAILW1151V.HDR25_BMI_TABLEONE_GROUPED5_ADULT GROUP BY denom_year
+SELECT DISTINCT denom_year, count(*) FROM SAILWNNNNV.BMI_TABLEONE_GROUPED5_ADULT GROUP BY denom_year
